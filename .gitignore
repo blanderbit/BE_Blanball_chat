@@ -94,7 +94,7 @@ db.env
 celerybeat-schedule
 backup/
 
-postgres-data/
+db-data/
 qa.txt
 .mypy_cache/
 

@@ -9,12 +9,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Application definition
 
 INSTALLED_APPS: list[str] = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "chat.apps.ChatConfig",
 ]
 
 MIDDLEWARE: list[str] = [
@@ -27,7 +26,7 @@ MIDDLEWARE: list[str] = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'chat.urls'
+ROOT_URLCONF = 'config.urls'
 
 TEMPLATES: list[dict[str, Any]] = [
     {
@@ -45,7 +44,7 @@ TEMPLATES: list[dict[str, Any]] = [
     },
 ]
 
-WSGI_APPLICATION: str = 'chat.wsgi.application'
+WSGI_APPLICATION: str = 'config.wsgi.application'
 
 
 DATABASES: dict[str, Any] = {
@@ -58,25 +57,6 @@ DATABASES: dict[str, Any] = {
         "PORT": config("POSTGRES_PORT", cast=int),
     }
 }
-
-
-# Password validation
-# https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
-
-AUTH_PASSWORD_VALIDATORS: list[dict[str, Any]] = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
-]
 
 
 # project secret key
@@ -126,5 +106,6 @@ DEFAULT_AUTO_FIELD: str = "django.db.models.BigAutoField"
 # if false, then in prod server mode
 DEBUG: bool = config("DEBUG", cast=bool)
 
-
 DEFAULT_AUTO_FIELD: str = 'django.db.models.BigAutoField'
+
+FAUST_BROKER_URL: str = 'blanball-chat-zookeeper:9092'

@@ -1,30 +1,29 @@
 version: "3.8"
 
 services:
-  db:
-    container_name: db
+  blanball-chat-db:
+    container_name: blanball-chat-db
     env_file:
       - .env
-    image: postgres/postgres:latest
+    image: postgres:latest
     volumes:
       - ./db-data:/var/lib/postgresql/data
     networks:
       - app-network
     ports:
-      - 5430:5430
+      - 5430:5432
     healthcheck:
-      test: pg_isready -U postgres -d postgres
+      test: pg_isready -U blanball_chat -d blanball_chat
       timeout: 5s
       retries: 20
 
-  api:
-    container_name: api
-    command: api
+  blanball-chat:
+    container_name: blanball-chat
     ports:
-      - 8000:8000
+      - 12000:12000
     env_file:
       - .env
-    entrypoint: scripts/start.sh
+    command: bash scripts/start.sh
     build:
       context: .
       dockerfile: Dockerfile
@@ -33,32 +32,32 @@ services:
     networks:
       - app-network
     depends_on:
-      db:
+      blanball-chat-db:
         condition: service_healthy
 
-  kafka:
-    container_name: kafka
+  blanball-chat-kafka:
+    container_name: blanball-chat-kafka
     env_file:
       - .env
     image: confluentinc/cp-kafka:latest
     depends_on:
-      - zookeeper
+      - blanball-chat-zookeeper
     ports:
-      - 9092:9092
-      - 9093:9093
+      - 9094:9092
+      - 9095:9093
     restart: always
     volumes:
       - kafka-data:/usr/src/blanball-chat/storage/kafka/data
     networks:
       - app-network
 
-  zookeeper:
-    container_name: zookeeper
+  blanball-chat-zookeeper:
+    container_name: blanball-chat-zookeeper
     env_file:
       - .env
     image: zookeeper:latest
     ports:
-      - 2181:2181
+      - 2183:2181
     restart: always
     volumes:
       - zookeeper-data:/usr/src/blanball-chat/storage/zookeeper/data \

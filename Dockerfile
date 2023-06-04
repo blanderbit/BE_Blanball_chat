@@ -7,7 +7,7 @@ ARG DEPLOY \
 
 ENV DEPLOY=${DEPLOY} \
   # project workind directory
-  APP_PATH='/usr/src/blanball' \
+  APP_PATH='/usr/src/blanball-chat' \
   # python:
   PYTHONFAULTHANDLER=1 \
   PYTHONUNBUFFERED=1 \
@@ -36,7 +36,7 @@ RUN apt-get update && apt-get upgrade -y \
   && apt-get install --no-install-recommends -y \
   && groupadd -g "${GID}" -r deploy \
   && useradd -d $APP_PATH -g deploy -l -r -u "${UID}" deploy \
-  && chown deploy:deploy -R $APP_PATH \
+  && chown deploy:deploy -R $APP_PATH
 
 # Installing `poetry` package manager:
 # https://github.com/python-poetry/poetry
