@@ -5,7 +5,7 @@ from pathlib import Path
 from decouple import Csv, config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR: str = Path(__file__).resolve().parent.parent
 
 # Application definition
 
@@ -27,7 +27,7 @@ MIDDLEWARE: list[str] = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'config.urls'
+ROOT_URLCONFL: str = 'config.urls'
 
 TEMPLATES: list[dict[str, Any]] = [
     {
@@ -109,7 +109,7 @@ DEBUG: bool = config("DEBUG", cast=bool)
 
 DEFAULT_AUTO_FIELD: str = 'django.db.models.BigAutoField'
 
-KAFKA_CONSUMER_CONFIG = {
+KAFKA_CONSUMER_CONFIG: dict[str, Any] = {
     'bootstrap_servers': [config("KAFKA_PRODUCER_ADRESS", cast=str)],
     'value_deserializer': lambda v: json.loads(v.decode('utf-8')),
 }
