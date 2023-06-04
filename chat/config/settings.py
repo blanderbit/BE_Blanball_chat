@@ -1,3 +1,4 @@
+import json
 from typing import Any
 from os import path
 from pathlib import Path
@@ -108,4 +109,7 @@ DEBUG: bool = config("DEBUG", cast=bool)
 
 DEFAULT_AUTO_FIELD: str = 'django.db.models.BigAutoField'
 
-FAUST_BROKER_URL: str = 'blanball-chat-zookeeper:9092'
+KAFKA_CONSUMER_CONFIG = {
+    'bootstrap_servers': [config("KAFKA_PRODUCER_ADRESS", cast=str)],
+    'value_deserializer': lambda v: json.loads(v.decode('utf-8')),
+}
