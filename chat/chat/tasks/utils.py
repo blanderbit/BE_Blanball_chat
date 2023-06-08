@@ -16,10 +16,10 @@ def generate_response(*,
     ) -> dict[str, Any]:
     if (request_id):
         return {
+            "message_type": message_type,
             "request_id": request_id,
             "status": status,
             "data": data,
-            "message_type": message_type
         }
     return {
         "message_type": message_type,

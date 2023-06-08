@@ -49,13 +49,16 @@ def set_chat_type(data: chat_data) -> str:
 
 def create_chat(data: chat_data) -> chat_data:
     users = data.get("users", [])
+    users.append(data["author"])
+    if (data.get("user")):
+        users.append(data.get("user"))
 
     chat = Chat.objects.create(
         name=data['name'],
-        author_id=data["author"],
         type=set_chat_type(data),
         users=[
             {
+                "author": user == data["author"],
                 "disabled": False,
                 "user_id": user,
             }

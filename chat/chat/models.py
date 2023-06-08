@@ -14,7 +14,6 @@ class Chat(models.Model):
         PERSNAL: str = "Personal"
         GROUP: str = "Group"
 
-    author_id: int = models.BigIntegerField(validators=[MinValueValidator(1)])
     name: str = models.CharField(max_length=255)
     time_created: datetime = models.DateTimeField(auto_now_add=True)
     type: str = models.CharField(
@@ -36,7 +35,6 @@ class Chat(models.Model):
 
     def get_all_data(self) -> dict[str, Any]:
         return {
-            "author_id": self.author_id,
             "name": self.name,
             "time_created": str(self.time_created),
             "type": self.type,
