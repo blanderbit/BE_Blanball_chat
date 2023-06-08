@@ -13,6 +13,7 @@ RESPONSE_TOPIC_NAME: str = 'create_chat_response'
 CHAT_NAME_NOT_PROVIDED_ERROR: str = 'name_not_provided'
 CHAT_AUTOR_NOT_PROVIDED_ERROR: str = 'author_not_provided'
 REQUEST_ID_NOT_PROVIDED_ERROR: str = 'request_id_not_provided'
+CHAT_EVENT_ID_NOT_PROVIDED: str = 'event_id_not_provided'
 
 MESSAGE_TYPE: str = 'create_chat'
 
@@ -38,17 +39,26 @@ def validate_input_data(data: chat_data) -> None:
 def set_chat_type(data: chat_data) -> str:
     chat_type = data.get("type")
     chat_users = data.get("users", [])
+    event_id = data.get("event_id")
+
+    print(chat_users, type(chat_users))
 
     if not chat_type:
         if len(chat_users == 0) or len(chat_users >= 2):
-            return Chat.Type.GROUP
+
+            if not event_id:
+                return Chat.Type.GROUP
+            return Chat.Type.EVENT_GROUP
         else:
-            return Chat.Type.PERSNAL
+            return Chat.Type.PERSONAL
+    elif chat_type == Chat.Type.EVENT_GROUP and not event_id:
+        raise ValueError(CHAT_EVENT_ID_NOT_PROVIDED)
     return chat_type
 
 
 def create_chat(data: chat_data) -> chat_data:
     users = data.get("users", [])
+    event_id = data.get("event_id")
     users.append(data["author"])
     if (data.get("user")):
         users.append(data.get("user"))
@@ -56,6 +66,7 @@ def create_chat(data: chat_data) -> chat_data:
     chat = Chat.objects.create(
         name=data['name'],
         type=set_chat_type(data),
+        event_id=event_id,
         users=[
             {
                 "author": user == data["author"],

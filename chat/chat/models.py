@@ -11,14 +11,18 @@ from django.core.validators import MinValueValidator
 @final
 class Chat(models.Model):
     class Type(models.TextChoices):
-        PERSNAL: str = "Personal"
+        PERSONAL: str = "Personal"
         GROUP: str = "Group"
+        EVENT_GROUP: str = "Event_Group"
 
     name: str = models.CharField(max_length=255)
     time_created: datetime = models.DateTimeField(auto_now_add=True)
+    disabled: bool = models.BooleanField(default=False)
     type: str = models.CharField(
         choices=Type.choices, max_length=15, blank=False, null=False)
     users: Optional[dict[str, Union[str, int]]] = models.JSONField(null=True)
+    event_id: int = models.BigIntegerField(
+        validators=[MinValueValidator(1)], null=True)
 
     def __repr__(self) -> str:
         return "<Chat %s>" % self.id
@@ -38,7 +42,8 @@ class Chat(models.Model):
             "name": self.name,
             "time_created": str(self.time_created),
             "type": self.type,
-            "users": self.users
+            "users": self.users,
+            "disabled": self.disabled
         }
 
     class Meta:
