@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "chat"
+version = "0.1.0"
+description = ""
+authors = ["Djoncarton1921 <shapranov.nik@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+Django = "^4.2.1"
+python-decouple = "^3.8"
+psycopg = "^3.1.9"
+psycopg2-binary = "^2.9.6"
+kafka-python = "^2.0.2"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
