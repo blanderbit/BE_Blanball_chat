@@ -1,6 +1,6 @@
 import multiprocessing
 from django.core.management.base import BaseCommand
-from chat.tasks import base_consumer
+from chat.tasks import ALL_TASKS
 
 
 class Command(BaseCommand):
@@ -9,11 +9,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         processes = []
 
-        # Launch multiple consumers in separate processes
-        process1 = multiprocessing.Process(target=base_consumer)
-        # Add other consumer processes as needed
-
-        processes.append(process1)
+        for task in ALL_TASKS:
+            process = multiprocessing.Process(target=task)
+            processes.append(process)
 
         # Start all the consumer processes
         for process in processes:
