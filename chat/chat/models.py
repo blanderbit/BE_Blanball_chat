@@ -21,8 +21,9 @@ class Chat(models.Model):
     type: str = models.CharField(
         choices=Type.choices, max_length=15, blank=False, null=False)
     users: Optional[dict[str, Union[str, int]]] = models.JSONField(null=True)
-    event_id: int = models.BigIntegerField(
+    event_id: Optional[int] = models.BigIntegerField(
         validators=[MinValueValidator(1)], null=True)
+    image: Optional[str] = models.CharField(max_length=10000, null=True)
 
     def __repr__(self) -> str:
         return "<Chat %s>" % self.id
@@ -43,7 +44,8 @@ class Chat(models.Model):
             "time_created": str(self.time_created),
             "type": self.type,
             "users": self.users,
-            "disabled": self.disabled
+            "disabled": self.disabled,
+            "image": self.image
         }
 
     class Meta:

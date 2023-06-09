@@ -11,31 +11,29 @@ from chat.tasks.default_producer import (
     default_producer
 )
 
-TOPIC_NAME: str = 'add_user_to_chat'
-RESPONSE_TOPIC_NAME: str = 'add_user_to_chat_response'
 
-MESSAGE_TYPE: str = 'add_user_to_chat'
+TOPIC_NAME: str = 'remove_user_from_chat'
+RESPONSE_TOPIC_NAME: str = 'remove_user_from_chat_response'
+
+MESSAGE_TYPE: str = 'remove_user_from_chat'
 
 USER_ID_NOT_PROVIDED_ERROR: str = 'user_id_not_provided'
-CHAT_ID_OR_EVENT_ID_NOT_PROVIDED_ERROR: str = 'chat_id_or_event_id_not_provided'
-CANT_ADD_USER_TO_PERSONAL_CHAT_ERROR: str = 'cant_add_user_to_personal_chat'
+CHAT_ID_NOT_PROVIDED_ERROR: str = 'chat_id_not_provided'
 CHAT_NOT_FOUND_ERROR: str = 'chat_not_found'
-CANT_ADD_USER_WHO_IS_ALREADY_IN_THE_CHAT_ERROR: str = 'cant_add_user_who_is_already_in_the_chat'
-
-USER_ADDED_TO_CHAT_SUCCESS: dict[str, str] = {"success": "user_added_to_chat"}
+CANT_REMOVE_USER_WHO_NOT_IN_THE_CHAT: str = 'cant_remove_user_who_not_in_the_chat'
 
 chat_data = dict[str, Any]
 
 
 def validate_input_data(data: chat_data) -> None:
-    user_id = data.get('user_id')
-    event_id = data.get('event_id')
-    chat_id = data.get('chat_id')
+    user_id = data.get("user_id")
+    chat_id = data.get("chat_id")
+    event_id = data.get("event_id")
 
     if not user_id:
         raise ValueError(USER_ID_NOT_PROVIDED_ERROR)
-    if not event_id and not chat_id:
-        raise ValueError(CHAT_ID_OR_EVENT_ID_NOT_PROVIDED_ERROR)
+    if not chat_id:
+        raise ValueError(CHAT_ID_NOT_PROVIDED_ERROR)
 
     try:
         global chat_instance
@@ -48,26 +46,18 @@ def validate_input_data(data: chat_data) -> None:
             if not chat_instance:
                 raise ValueError(CHAT_NOT_FOUND_ERROR)
 
-        if chat_instance.type == Chat.Type.PERSONAL:
-            raise ValueError(CANT_ADD_USER_TO_PERSONAL_CHAT_ERROR)
-        elif any(user['user_id'] == user_id for user in chat_instance.users):
-            raise ValueError(CANT_ADD_USER_WHO_IS_ALREADY_IN_THE_CHAT_ERROR)
+        if not any(user['user_id'] == user_id for user in chat_instance.users):
+            raise ValueError(CANT_REMOVE_USER_WHO_NOT_IN_THE_CHAT)
 
     except Chat.DoesNotExist:
         raise ValueError(CHAT_NOT_FOUND_ERROR)
 
 
-def add_user_to_chat(user_id: int) -> None:
-    chat_instance.users.append({
-        "author": False,
-        "disabled": False,
-        "user_id": user_id,
-    })
-
-    return USER_ADDED_TO_CHAT_SUCCESS
+def remove_user_from_chat() -> None:
+    pass
 
 
-def add_user_to_chat_consumer() -> None:
+def remove_user_from_chat_consumer() -> None:
     consumer: KafkaConsumer = KafkaConsumer(
         TOPIC_NAME, **settings.KAFKA_CONSUMER_CONFIG)
 
@@ -77,7 +67,7 @@ def add_user_to_chat_consumer() -> None:
 
         try:
             validate_input_data(data.value)
-            response_data = add_user_to_chat(data.value.get("user_id"))
+            response_data = remove_user_from_chat(data.value.get("user_id"))
             default_producer(
                 generate_response(
                     status=RESPONSE_STATUSES["SUCCESS"],

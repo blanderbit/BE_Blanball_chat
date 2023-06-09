@@ -7,6 +7,10 @@ from chat.tasks.utils import (
     RESPONSE_STATUSES,
     generate_response,
 )
+from chat.tasks.default_producer import (
+    default_producer
+)
+
 
 TOPIC_NAME: str = 'create_chat'
 RESPONSE_TOPIC_NAME: str = 'create_chat_response'
@@ -19,12 +23,6 @@ MESSAGE_TYPE: str = 'create_chat'
 
 
 chat_data = dict[str, Any]
-
-
-def create_chat_response_producer(response_data: Any) -> None:
-    producer: KafkaProducer = KafkaProducer(**settings.KAFKA_PRODUCER_CONFIG)
-    producer.send(RESPONSE_TOPIC_NAME, value=response_data)
-    producer.flush()
 
 
 def validate_input_data(data: chat_data) -> None:
@@ -40,8 +38,6 @@ def set_chat_type(data: chat_data) -> str:
     chat_type = data.get("type")
     chat_users = data.get("users", [])
     event_id = data.get("event_id")
-
-    print(chat_users, type(chat_users))
 
     if not chat_type:
         if len(chat_users == 0) or len(chat_users >= 2):
@@ -90,7 +86,7 @@ def create_chat_consumer() -> None:
         try:
             validate_input_data(data.value)
             new_chat_data = create_chat(data.value)
-            create_chat_response_producer(
+            default_producer(
                 generate_response(
                     status=RESPONSE_STATUSES["SUCCESS"],
                     data=new_chat_data,
@@ -99,7 +95,7 @@ def create_chat_consumer() -> None:
                 )
             )
         except ValueError as err:
-            create_chat_response_producer(
+            default_producer(
                 generate_response(
                     status=RESPONSE_STATUSES["ERROR"],
                     data=str(err),
