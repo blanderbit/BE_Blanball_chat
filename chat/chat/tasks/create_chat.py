@@ -6,14 +6,17 @@ from chat.models import Chat
 from chat.tasks.utils import (
     RESPONSE_STATUSES,
     generate_response,
-    create_user_data_before_add_to_chat,
 )
 from chat.tasks.default_producer import (
     default_producer
 )
 
 
+# the name of the main topic that we
+# are listening to receive data from outside
 TOPIC_NAME: str = 'create_chat'
+
+# the name of the topic to which we send the answer
 RESPONSE_TOPIC_NAME: str = 'create_chat_response'
 CHAT_NAME_NOT_PROVIDED_ERROR: str = 'name_not_provided'
 CHAT_AUTOR_NOT_PROVIDED_ERROR: str = 'author_not_provided'
@@ -65,7 +68,7 @@ def create_chat(data: chat_data) -> chat_data:
         type=set_chat_type(data),
         event_id=event_id,
         users=[
-            create_user_data_before_add_to_chat(
+            Chat.create_user_data_before_add_to_chat(
                 is_author=user == data["author"],
                 user_id=user,
             )

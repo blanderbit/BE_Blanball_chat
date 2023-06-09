@@ -6,13 +6,16 @@ from chat.models import Chat
 from chat.tasks.utils import (
     RESPONSE_STATUSES,
     generate_response,
-    create_user_data_before_add_to_chat,
 )
 from chat.tasks.default_producer import (
     default_producer
 )
 
+# the name of the main topic that we 
+# are listening to receive data from outside
 TOPIC_NAME: str = 'add_user_to_chat'
+
+# the name of the topic to which we send the answer
 RESPONSE_TOPIC_NAME: str = 'add_user_to_chat_response'
 
 MESSAGE_TYPE: str = 'add_user_to_chat'
@@ -60,7 +63,7 @@ def validate_input_data(data: chat_data) -> None:
 
 def add_user_to_chat(user_id: int) -> str:
     chat_instance.users.append(
-        create_user_data_before_add_to_chat(
+        Chat.create_user_data_before_add_to_chat(
             is_author=False,
             user_id=user_id,
         ))

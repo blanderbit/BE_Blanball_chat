@@ -15,7 +15,7 @@ class Chat(models.Model):
         GROUP: str = "Group"
         EVENT_GROUP: str = "Event_Group"
 
-    name: str = models.CharField(max_length=255)
+    name: str = models.CharField(max_length=355)
     time_created: datetime = models.DateTimeField(auto_now_add=True)
     disabled: bool = models.BooleanField(default=False)
     type: str = models.CharField(
@@ -46,6 +46,23 @@ class Chat(models.Model):
             "users": self.users,
             "disabled": self.disabled,
             "image": self.image
+        }
+    
+    @staticmethod
+    def create_user_data_before_add_to_chat(*,
+        is_author: bool, 
+        is_disabled: bool = False,
+        is_removed: bool = False, 
+        is_admin: bool = False,
+        user_id: int,
+    ) -> dict[str, Any]:
+
+        return {
+            "user_id": user_id,
+            "author": is_author,
+            "disabled": is_disabled,
+            "removed": is_removed,
+            "admin": is_admin,
         }
 
     class Meta:

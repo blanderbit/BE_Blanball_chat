@@ -11,8 +11,11 @@ from chat.tasks.default_producer import (
     default_producer
 )
 
-
+# the name of the main topic that we
+# are listening to receive data from outside
 TOPIC_NAME: str = 'remove_user_from_chat'
+
+# the name of the topic to which we send the answer
 RESPONSE_TOPIC_NAME: str = 'remove_user_from_chat_response'
 
 MESSAGE_TYPE: str = 'remove_user_from_chat'
@@ -56,12 +59,12 @@ def validate_input_data(data: chat_data) -> None:
             if chat_instance.type == Chat.Type.PERSONAL:
                 raise ValueError(CANT_REMOVE_USER_FROM_PERSONAL_CHAT)
 
-            if not any(user['user_id'] == sender_user_id and user["author"] == True for user in chat_instance.users):
+            if not any(user.get("user_id") == sender_user_id and user.get("author") == True for user in chat_instance.users):
                 raise ValueError(
                     YOU_DONT_HAVE_PERMISSIONS_TO_REMOVE_USER_FROM_THIS_CHAT_ERROR
                 )
 
-        if not any(user['user_id'] == user_id for user in chat_instance.users):
+        if not any(user.get("user_id") == user_id for user in chat_instance.users):
             raise ValueError(CANT_REMOVE_USER_WHO_NOT_IN_THE_CHAT)
 
     except Chat.DoesNotExist:
