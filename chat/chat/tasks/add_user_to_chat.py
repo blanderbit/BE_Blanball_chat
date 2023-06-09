@@ -6,6 +6,7 @@ from chat.models import Chat
 from chat.tasks.utils import (
     RESPONSE_STATUSES,
     generate_response,
+    create_user_data_before_add_to_chat,
 )
 from chat.tasks.default_producer import (
     default_producer
@@ -22,7 +23,7 @@ CANT_ADD_USER_TO_PERSONAL_CHAT_ERROR: str = 'cant_add_user_to_personal_chat'
 CHAT_NOT_FOUND_ERROR: str = 'chat_not_found'
 CANT_ADD_USER_WHO_IS_ALREADY_IN_THE_CHAT_ERROR: str = 'cant_add_user_who_is_already_in_the_chat'
 
-USER_ADDED_TO_CHAT_SUCCESS: dict[str, str] = {"success": "user_added_to_chat"}
+USER_ADDED_TO_CHAT_SUCCESS: dict[str, str] = 'user_added_to_chat'
 
 chat_data = dict[str, Any]
 
@@ -57,12 +58,12 @@ def validate_input_data(data: chat_data) -> None:
         raise ValueError(CHAT_NOT_FOUND_ERROR)
 
 
-def add_user_to_chat(user_id: int) -> None:
-    chat_instance.users.append({
-        "author": False,
-        "disabled": False,
-        "user_id": user_id,
-    })
+def add_user_to_chat(user_id: int) -> str:
+    chat_instance.users.append(
+        create_user_data_before_add_to_chat(
+            is_author=False,
+            user_id=user_id,
+        ))
 
     return USER_ADDED_TO_CHAT_SUCCESS
 
@@ -79,6 +80,7 @@ def add_user_to_chat_consumer() -> None:
             validate_input_data(data.value)
             response_data = add_user_to_chat(data.value.get("user_id"))
             default_producer(
+                RESPONSE_TOPIC_NAME,
                 generate_response(
                     status=RESPONSE_STATUSES["SUCCESS"],
                     data=response_data,
@@ -88,6 +90,7 @@ def add_user_to_chat_consumer() -> None:
             )
         except ValueError as err:
             default_producer(
+                RESPONSE_TOPIC_NAME,
                 generate_response(
                     status=RESPONSE_STATUSES["ERROR"],
                     data=str(err),

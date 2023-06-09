@@ -6,6 +6,7 @@ from chat.models import Chat
 from chat.tasks.utils import (
     RESPONSE_STATUSES,
     generate_response,
+    create_user_data_before_add_to_chat,
 )
 from chat.tasks.default_producer import (
     default_producer
@@ -64,11 +65,10 @@ def create_chat(data: chat_data) -> chat_data:
         type=set_chat_type(data),
         event_id=event_id,
         users=[
-            {
-                "author": user == data["author"],
-                "disabled": False,
-                "user_id": user,
-            }
+            create_user_data_before_add_to_chat(
+                is_author=user == data["author"],
+                user_id=user,
+            )
             for user in users
         ]
     )
@@ -87,6 +87,7 @@ def create_chat_consumer() -> None:
             validate_input_data(data.value)
             new_chat_data = create_chat(data.value)
             default_producer(
+                RESPONSE_TOPIC_NAME,
                 generate_response(
                     status=RESPONSE_STATUSES["SUCCESS"],
                     data=new_chat_data,
@@ -96,6 +97,7 @@ def create_chat_consumer() -> None:
             )
         except ValueError as err:
             default_producer(
+                RESPONSE_TOPIC_NAME,
                 generate_response(
                     status=RESPONSE_STATUSES["ERROR"],
                     data=str(err),
