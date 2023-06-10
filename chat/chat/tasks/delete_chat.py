@@ -17,6 +17,7 @@ from chat.tasks.utils import (
     check_user_is_chat_member,
     find_user_in_chat_by_id,
     generate_response,
+    get_chat,
 )
 
 # the name of the main topic that we
@@ -31,11 +32,11 @@ MESSAGE_TYPE: str = "delete_chat"
 
 CHAT_ID_OR_EVENT_ID_NOT_PROVIDED_ERROR: str = "chat_id_or_event_id_not_provided"
 USER_ID_NOT_PROVIDED: str = "user_id_not_provided"
-CHAT_NOT_FOUND_ERROR: str = "chat_not_found"
 YOU_DONT_HAVE_PERMISSIONS_TO_DELETE_THIS_CHAT_ERROR: str = (
     "you_dont_have_permissions_to_delete_this_chat"
 )
 CHAT_DELETED_SUCCESS: str = "chat_deleted"
+CHAT_NOT_FOUND_ERROR: str = "chat_not_found"
 
 
 chat_data = dict[str, Any]
@@ -51,25 +52,18 @@ def validate_input_data(data: chat_data) -> None:
     if not user_id:
         raise ValueError(USER_ID_NOT_PROVIDED)
 
-    try:
-        global chat_instance
-        if chat_id:
-            chat_instance = Chat.objects.get(id=chat_id)
-        else:
-            chat_instance = Chat.objects.filter(event_id=event_id)[0]
+    global chat_instance
+    chat_instance = get_chat(chat_id=chat_id, event_id=event_id)
 
-        if (
-            chat_instance.type == Chat.Type.GROUP
-            or chat_instance.type == Chat.Type.EVENT_GROUP
-        ):
-            if not check_user_is_chat_author(chat=chat_instance, user_id=user_id):
-                raise ValueError(YOU_DONT_HAVE_PERMISSIONS_TO_DELETE_THIS_CHAT_ERROR)
-        else:
-            if not check_user_is_chat_member(chat=chat_instance, user_id=user_id):
-                raise ValueError(CHAT_NOT_FOUND_ERROR)
-
-    except Chat.DoesNotExist:
-        raise ValueError(CHAT_NOT_FOUND_ERROR)
+    if (
+        chat_instance.type == Chat.Type.GROUP
+        or chat_instance.type == Chat.Type.EVENT_GROUP
+    ):
+        if not check_user_is_chat_author(chat=chat_instance, user_id=user_id):
+            raise ValueError(YOU_DONT_HAVE_PERMISSIONS_TO_DELETE_THIS_CHAT_ERROR)
+    else:
+        if not check_user_is_chat_member(chat=chat_instance, user_id=user_id):
+            raise ValueError(CHAT_NOT_FOUND_ERROR)
 
 
 def set_chat_deleted_by_certain_user(user: dict[str, Any]) -> None:

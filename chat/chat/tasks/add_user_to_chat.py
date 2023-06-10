@@ -10,6 +10,7 @@ from chat.tasks.default_producer import (
 from chat.tasks.utils import (
     RESPONSE_STATUSES,
     generate_response,
+    get_chat,
 )
 
 # the name of the main topic that we
@@ -24,7 +25,6 @@ MESSAGE_TYPE: str = "add_user_to_chat"
 USER_ID_NOT_PROVIDED_ERROR: str = "user_id_not_provided"
 CHAT_ID_OR_EVENT_ID_NOT_PROVIDED_ERROR: str = "chat_id_or_event_id_not_provided"
 CANT_ADD_USER_TO_PERSONAL_CHAT_ERROR: str = "cant_add_user_to_personal_chat"
-CHAT_NOT_FOUND_ERROR: str = "chat_not_found"
 CANT_ADD_USER_WHO_IS_ALREADY_IN_THE_CHAT_ERROR: str = (
     "cant_add_user_who_is_already_in_the_chat"
 )
@@ -44,24 +44,13 @@ def validate_input_data(data: chat_data) -> None:
     if not event_id and not chat_id:
         raise ValueError(CHAT_ID_OR_EVENT_ID_NOT_PROVIDED_ERROR)
 
-    try:
-        global chat_instance
+    global chat_instance
+    chat_instance = get_chat(chat_id=chat_id, event_id=event_id)
 
-        if chat_id:
-            chat_instance = Chat.objects.get(id=chat_id)
-        else:
-            chat_instance = Chat.objects.filter(event_id=event_id)[0]
-
-            if not chat_instance:
-                raise ValueError(CHAT_NOT_FOUND_ERROR)
-
-        if chat_instance.type == Chat.Type.PERSONAL:
-            raise ValueError(CANT_ADD_USER_TO_PERSONAL_CHAT_ERROR)
-        elif any(user["user_id"] == user_id for user in chat_instance.users):
-            raise ValueError(CANT_ADD_USER_WHO_IS_ALREADY_IN_THE_CHAT_ERROR)
-
-    except Chat.DoesNotExist:
-        raise ValueError(CHAT_NOT_FOUND_ERROR)
+    if chat_instance.type == Chat.Type.PERSONAL:
+        raise ValueError(CANT_ADD_USER_TO_PERSONAL_CHAT_ERROR)
+    elif any(user["user_id"] == user_id for user in chat_instance.users):
+        raise ValueError(CANT_ADD_USER_WHO_IS_ALREADY_IN_THE_CHAT_ERROR)
 
 
 def add_user_to_chat(*, user_id: int, chat: Chat) -> str:

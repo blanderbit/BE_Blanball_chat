@@ -13,6 +13,7 @@ from chat.tasks.utils import (
     check_user_is_chat_member,
     find_user_in_chat_by_id,
     generate_response,
+    get_chat,
 )
 
 # the name of the main topic that we
@@ -49,33 +50,22 @@ def validate_input_data(data: chat_data) -> None:
     if not event_id and not chat_id:
         raise ValueError(CHAT_ID_OR_EVENT_ID_NOT_PROVIDED_ERROR)
 
-    try:
-        global chat_instance
+    global chat_instance
+    chat_instance = get_chat(chat_id=chat_id, event_id=event_id)
 
-        if chat_id:
-            chat_instance = Chat.objects.get(id=chat_id)
-        else:
-            chat_instance = Chat.objects.filter(event_id=event_id)[0]
+    if sender_user_id:
+        if chat_instance.type == Chat.Type.PERSONAL:
+            raise ValueError(CANT_REMOVE_USER_FROM_PERSONAL_CHAT)
 
-            if not chat_instance:
-                raise ValueError(CHAT_NOT_FOUND_ERROR)
+        if not check_user_is_chat_author(
+            chat=chat_instance, user_id=sender_user_id
+        ):
+            raise ValueError(
+                YOU_DONT_HAVE_PERMISSIONS_TO_REMOVE_USER_FROM_THIS_CHAT_ERROR
+            )
 
-        if sender_user_id:
-            if chat_instance.type == Chat.Type.PERSONAL:
-                raise ValueError(CANT_REMOVE_USER_FROM_PERSONAL_CHAT)
-
-            if not check_user_is_chat_author(
-                chat=chat_instance, user_id=sender_user_id
-            ):
-                raise ValueError(
-                    YOU_DONT_HAVE_PERMISSIONS_TO_REMOVE_USER_FROM_THIS_CHAT_ERROR
-                )
-
-        if not check_user_is_chat_member(chat=chat_instance, user_id=user_id):
-            raise ValueError(CANT_REMOVE_USER_WHO_NOT_IN_THE_CHAT)
-
-    except Chat.DoesNotExist:
-        raise ValueError(CHAT_NOT_FOUND_ERROR)
+    if not check_user_is_chat_member(chat=chat_instance, user_id=user_id):
+        raise ValueError(CANT_REMOVE_USER_WHO_NOT_IN_THE_CHAT)
 
 
 def remove_user_from_chat(

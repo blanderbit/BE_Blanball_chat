@@ -3,17 +3,11 @@ from typing import Any, Optional
 from chat.models import Chat
 
 RESPONSE_STATUSES: dict[str, str] = {"ERROR": "error", "SUCCESS": "success"}
+CHAT_NOT_FOUND_ERROR: str = "chat_not_found"
 
 
 def check_is_all_users_deleted_personal_chat(*, chat: Chat) -> bool:
     return all(user.get("chat_deleted") for user in chat.users)
-
-
-def find_user_in_chat_by_id(
-    *, users: list[int], user_id: int
-) -> Optional[dict[str, Any]]:
-    filtered_users = filter(lambda user: user["user_id"] == user_id, users)
-    return next(filtered_users, None)
 
 
 def check_user_is_chat_member(*, chat: Chat, user_id: int) -> bool:
@@ -30,6 +24,29 @@ def check_user_is_chat_author(*, chat: Chat, user_id: int) -> bool:
     return any(
         user.get("user_id") == user_id and user.get("author") for user in chat.users
     )
+
+
+def find_user_in_chat_by_id(
+    *, users: list[int], user_id: int
+) -> Optional[dict[str, Any]]:
+    filtered_users = filter(lambda user: user["user_id"] == user_id, users)
+    return next(filtered_users, None)
+
+
+def get_chat(*, chat_id: Optional[int] = None, event_id: Optional[int] = None) -> Chat:
+
+    try:
+        if chat_id:
+            chat_instance = Chat.objects.get(id=chat_id)
+        else:
+            chat_instance = Chat.objects.filter(event_id=event_id)[0]
+
+            if not chat_instance:
+                raise ValueError(CHAT_NOT_FOUND_ERROR)
+    except Chat.DoesNotExist:
+        raise ValueError(CHAT_NOT_FOUND_ERROR)
+
+    return chat_instance
 
 
 def generate_response(
