@@ -50,10 +50,11 @@ class Chat(models.Model):
     
     @staticmethod
     def create_user_data_before_add_to_chat(*,
-        is_author: bool, 
+        is_author: bool,
         is_disabled: bool = False,
-        is_removed: bool = False, 
+        is_removed: bool = False,
         is_admin: bool = False,
+        is_chat_deleted: bool = False,
         user_id: int,
     ) -> dict[str, Any]:
 
@@ -63,6 +64,7 @@ class Chat(models.Model):
             "disabled": is_disabled,
             "removed": is_removed,
             "admin": is_admin,
+            "chat_deleted": is_chat_deleted
         }
 
     class Meta:

@@ -11,7 +11,7 @@ from chat.tasks.default_producer import (
     default_producer
 )
 
-# the name of the main topic that we 
+# the name of the main topic that we
 # are listening to receive data from outside
 TOPIC_NAME: str = 'add_user_to_chat'
 
@@ -61,12 +61,13 @@ def validate_input_data(data: chat_data) -> None:
         raise ValueError(CHAT_NOT_FOUND_ERROR)
 
 
-def add_user_to_chat(user_id: int) -> str:
-    chat_instance.users.append(
+def add_user_to_chat(*, user_id: int, chat: Chat) -> str:
+    chat.users.append(
         Chat.create_user_data_before_add_to_chat(
             is_author=False,
             user_id=user_id,
         ))
+    chat.save()
 
     return USER_ADDED_TO_CHAT_SUCCESS
 
@@ -81,7 +82,10 @@ def add_user_to_chat_consumer() -> None:
 
         try:
             validate_input_data(data.value)
-            response_data = add_user_to_chat(data.value.get("user_id"))
+            response_data = add_user_to_chat(
+                user_id=data.value.get("user_id"),
+                chat=chat_instance
+            )
             default_producer(
                 RESPONSE_TOPIC_NAME,
                 generate_response(

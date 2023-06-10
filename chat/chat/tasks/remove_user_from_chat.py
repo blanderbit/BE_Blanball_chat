@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 
 from kafka import KafkaConsumer, KafkaProducer
 from django.conf import settings
@@ -6,6 +6,9 @@ from chat.models import Chat
 from chat.tasks.utils import (
     RESPONSE_STATUSES,
     generate_response,
+    check_user_is_chat_author,
+    check_user_is_chat_member,
+    find_user_in_chat_by_id,
 )
 from chat.tasks.default_producer import (
     default_producer
@@ -59,27 +62,36 @@ def validate_input_data(data: chat_data) -> None:
             if chat_instance.type == Chat.Type.PERSONAL:
                 raise ValueError(CANT_REMOVE_USER_FROM_PERSONAL_CHAT)
 
-            if not any(user.get("user_id") == sender_user_id and user.get("author") == True for user in chat_instance.users):
+            if not check_user_is_chat_author(chat=chat_instance, user_id=sender_user_id):
                 raise ValueError(
                     YOU_DONT_HAVE_PERMISSIONS_TO_REMOVE_USER_FROM_THIS_CHAT_ERROR
                 )
 
-        if not any(user.get("user_id") == user_id for user in chat_instance.users):
+        if not check_user_is_chat_member(chat=chat_instance, user_id=user_id):
             raise ValueError(CANT_REMOVE_USER_WHO_NOT_IN_THE_CHAT)
 
     except Chat.DoesNotExist:
         raise ValueError(CHAT_NOT_FOUND_ERROR)
 
 
-def remove_user_from_chat(user_id: int) -> str:
-    filtered_users = filter(
-        lambda user: user['user_id'] == user_id, chat_instance.users)
-    user_to_remove = next(filtered_users, None)
+def remove_user_from_chat(*, 
+        user_id: int, 
+        chat: Chat, 
+        sender_user_id: Optional[int] = None
+    ) -> str:
+    user_to_remove = find_user_in_chat_by_id(
+        users=chat.users,
+        user_id=user_id
+    )
 
     if user_to_remove:
-        chat_instance.users.remove(user_to_remove)
+        if (chat.type == Chat.Type.GROUP or chat.type == Chat.Type.EVENT_GROUP) and sender_user_id:
+            user_to_remove["removed"] = True
+        else:
+            chat.users.remove(user_to_remove)
+        chat.save()
     if len(chat_instance.users) == 0:
-        chat_instance.delete()
+        chat.delete()
 
     return USER_REMOVED_FROM_THE_CHAT_SUCCESS
 
@@ -94,7 +106,11 @@ def remove_user_from_chat_consumer() -> None:
 
         try:
             validate_input_data(data.value)
-            response_data = remove_user_from_chat(data.value.get("user_id"))
+            response_data = remove_user_from_chat(
+                user_id=data.value.get("user_id"),
+                chat=chat_instance,
+                sender_user_id=data.value.get("sender_user_id")
+            )
             default_producer(
                 RESPONSE_TOPIC_NAME,
                 generate_response(
