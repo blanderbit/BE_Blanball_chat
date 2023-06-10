@@ -80,7 +80,7 @@ class Messsage(models.Model):
     text: str = models.CharField(max_length=500)
     time_created: datetime = models.DateTimeField(auto_now_add=True)
     disabled: bool = models.BooleanField(default=False)
-    readed: bool = models.BooleanField(default=False)
+    readed_by: bool = models.JSONField(null=True)
     chat: Chat = models.ForeignKey(Chat, on_delete=models.CASCADE)
 
     def __repr__(self) -> str:
