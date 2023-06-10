@@ -10,7 +10,7 @@ from chat.tasks.default_producer import (
 from chat.tasks.remove_user_from_chat import (
     remove_user_from_chat,
 )
-from chat.tasks.utils import (
+from chat.utils import (
     RESPONSE_STATUSES,
     check_is_all_users_deleted_personal_chat,
     check_user_is_chat_author,

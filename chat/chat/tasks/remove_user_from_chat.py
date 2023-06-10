@@ -7,7 +7,7 @@ from chat.models import Chat
 from chat.tasks.default_producer import (
     default_producer,
 )
-from chat.tasks.utils import (
+from chat.utils import (
     RESPONSE_STATUSES,
     check_user_is_chat_author,
     check_user_is_chat_member,
