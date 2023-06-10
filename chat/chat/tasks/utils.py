@@ -26,6 +26,10 @@ def check_user_is_chat_author(*, chat: Chat, user_id: int) -> bool:
     )
 
 
+def check_is_chat_disabled(*, chat: Chat) -> bool:
+    return chat.disabled
+
+
 def find_user_in_chat_by_id(
     *, users: list[int], user_id: int
 ) -> Optional[dict[str, Any]]:

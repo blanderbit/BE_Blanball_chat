@@ -10,10 +10,14 @@ from chat.tasks.delete_chat import (
 from chat.tasks.remove_user_from_chat import (
     remove_user_from_chat_consumer as remove_user_from_chat_consumer,
 )
+from chat.tasks.disable_chat import (
+    disable_chat_consumer as disable_chat_consumer
+)
 
 ALL_TASKS = [
     create_chat_consumer,
     add_user_to_chat_consumer,
     remove_user_from_chat_consumer,
     delete_chat_consumer,
+    disable_chat_consumer,
 ]
