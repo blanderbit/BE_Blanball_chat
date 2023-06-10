@@ -6,7 +6,6 @@ CHAT_NOT_FOUND_ERROR: str = "chat_not_found"
 
 
 def get_chat(*, chat_id: Optional[int] = None, event_id: Optional[int] = None) -> Chat:
-
     try:
         if chat_id:
             chat_instance = Chat.objects.get(id=chat_id)

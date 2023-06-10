@@ -57,9 +57,7 @@ def validate_input_data(data: chat_data) -> None:
         if chat_instance.type == Chat.Type.PERSONAL:
             raise ValueError(CANT_REMOVE_USER_FROM_PERSONAL_CHAT)
 
-        if not check_user_is_chat_author(
-            chat=chat_instance, user_id=sender_user_id
-        ):
+        if not check_user_is_chat_author(chat=chat_instance, user_id=sender_user_id):
             raise ValueError(
                 YOU_DONT_HAVE_PERMISSIONS_TO_REMOVE_USER_FROM_THIS_CHAT_ERROR
             )

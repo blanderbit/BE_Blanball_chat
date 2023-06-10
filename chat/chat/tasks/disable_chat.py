@@ -52,7 +52,6 @@ def disable_chat_consumer() -> None:
     )
 
     for data in consumer:
-
         try:
             validate_input_data(data.value)
             response_data = disable_chat(
