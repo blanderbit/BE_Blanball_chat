@@ -1,7 +1,7 @@
 from typing import Any
 
 from django.conf import settings
-from kafka import KafkaConsumer, KafkaProducer
+from kafka import KafkaConsumer
 
 from chat.models import Chat
 from chat.tasks.default_producer import (
