@@ -1,11 +1,11 @@
-
-from typing import (
-    final, Union, Optional, Any
-)
 from datetime import datetime
+from typing import Any, Optional, Union, final
+
+from django.core.validators import (
+    MinValueValidator,
+)
 from django.db import models
 from django.db.models.query import QuerySet
-from django.core.validators import MinValueValidator
 
 
 @final
@@ -19,10 +19,12 @@ class Chat(models.Model):
     time_created: datetime = models.DateTimeField(auto_now_add=True)
     disabled: bool = models.BooleanField(default=False)
     type: str = models.CharField(
-        choices=Type.choices, max_length=15, blank=False, null=False)
+        choices=Type.choices, max_length=15, blank=False, null=False
+    )
     users: Optional[dict[str, Union[str, int]]] = models.JSONField(null=True)
     event_id: Optional[int] = models.BigIntegerField(
-        validators=[MinValueValidator(1)], null=True)
+        validators=[MinValueValidator(1)], null=True
+    )
     image: Optional[str] = models.CharField(max_length=10000, null=True)
 
     def __repr__(self) -> str:
@@ -45,11 +47,12 @@ class Chat(models.Model):
             "type": self.type,
             "users": self.users,
             "disabled": self.disabled,
-            "image": self.image
+            "image": self.image,
         }
-    
+
     @staticmethod
-    def create_user_data_before_add_to_chat(*,
+    def create_user_data_before_add_to_chat(
+        *,
         is_author: bool,
         is_disabled: bool = False,
         is_removed: bool = False,
@@ -57,14 +60,13 @@ class Chat(models.Model):
         is_chat_deleted: bool = False,
         user_id: int,
     ) -> dict[str, Any]:
-
         return {
             "user_id": user_id,
             "author": is_author,
             "disabled": is_disabled,
             "removed": is_removed,
             "admin": is_admin,
-            "chat_deleted": is_chat_deleted
+            "chat_deleted": is_chat_deleted,
         }
 
     class Meta:

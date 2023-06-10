@@ -4,14 +4,13 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('chat', '0002_messsage_readed'),
+        ("chat", "0002_messsage_readed"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='chat',
-            name='author_id',
+            model_name="chat",
+            name="author_id",
         ),
     ]

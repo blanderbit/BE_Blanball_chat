@@ -5,25 +5,33 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('chat', '0003_remove_chat_author_id'),
+        ("chat", "0003_remove_chat_author_id"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='chat',
-            name='disabled',
+            model_name="chat",
+            name="disabled",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='chat',
-            name='event_id',
-            field=models.BigIntegerField(null=True, validators=[django.core.validators.MinValueValidator(1)]),
+            model_name="chat",
+            name="event_id",
+            field=models.BigIntegerField(
+                null=True, validators=[django.core.validators.MinValueValidator(1)]
+            ),
         ),
         migrations.AlterField(
-            model_name='chat',
-            name='type',
-            field=models.CharField(choices=[('Personal', 'Personal'), ('Group', 'Group'), ('Event_Group', 'Event Group')], max_length=15),
+            model_name="chat",
+            name="type",
+            field=models.CharField(
+                choices=[
+                    ("Personal", "Personal"),
+                    ("Group", "Group"),
+                    ("Event_Group", "Event Group"),
+                ],
+                max_length=15,
+            ),
         ),
     ]

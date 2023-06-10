@@ -1,35 +1,38 @@
 from typing import Any, Optional
 
-from kafka import KafkaConsumer, KafkaProducer
 from django.conf import settings
+from kafka import KafkaConsumer, KafkaProducer
+
 from chat.models import Chat
+from chat.tasks.default_producer import (
+    default_producer,
+)
 from chat.tasks.utils import (
     RESPONSE_STATUSES,
-    generate_response,
     check_user_is_chat_author,
     check_user_is_chat_member,
     find_user_in_chat_by_id,
-)
-from chat.tasks.default_producer import (
-    default_producer
+    generate_response,
 )
 
 # the name of the main topic that we
 # are listening to receive data from outside
-TOPIC_NAME: str = 'remove_user_from_chat'
+TOPIC_NAME: str = "remove_user_from_chat"
 
 # the name of the topic to which we send the answer
-RESPONSE_TOPIC_NAME: str = 'remove_user_from_chat_response'
+RESPONSE_TOPIC_NAME: str = "remove_user_from_chat_response"
 
-MESSAGE_TYPE: str = 'remove_user_from_chat'
+MESSAGE_TYPE: str = "remove_user_from_chat"
 
-USER_ID_NOT_PROVIDED_ERROR: str = 'user_id_not_provided'
-CHAT_ID_OR_EVENT_ID_NOT_PROVIDED_ERROR: str = 'chat_id_or_event_id_not_provided'
-CHAT_NOT_FOUND_ERROR: str = 'chat_not_found'
-CANT_REMOVE_USER_WHO_NOT_IN_THE_CHAT: str = 'cant_remove_user_who_not_in_the_chat'
-USER_REMOVED_FROM_THE_CHAT_SUCCESS: str = 'user_removed_from_the_chat'
-YOU_DONT_HAVE_PERMISSIONS_TO_REMOVE_USER_FROM_THIS_CHAT_ERROR: str = 'you_dont_have_permissions_to_remove_user_from_this_chat'
-CANT_REMOVE_USER_FROM_PERSONAL_CHAT: str = 'cant_remove_user_from_personal_chat'
+USER_ID_NOT_PROVIDED_ERROR: str = "user_id_not_provided"
+CHAT_ID_OR_EVENT_ID_NOT_PROVIDED_ERROR: str = "chat_id_or_event_id_not_provided"
+CHAT_NOT_FOUND_ERROR: str = "chat_not_found"
+CANT_REMOVE_USER_WHO_NOT_IN_THE_CHAT: str = "cant_remove_user_who_not_in_the_chat"
+USER_REMOVED_FROM_THE_CHAT_SUCCESS: str = "user_removed_from_the_chat"
+YOU_DONT_HAVE_PERMISSIONS_TO_REMOVE_USER_FROM_THIS_CHAT_ERROR: str = (
+    "you_dont_have_permissions_to_remove_user_from_this_chat"
+)
+CANT_REMOVE_USER_FROM_PERSONAL_CHAT: str = "cant_remove_user_from_personal_chat"
 
 
 chat_data = dict[str, Any]
@@ -58,11 +61,12 @@ def validate_input_data(data: chat_data) -> None:
                 raise ValueError(CHAT_NOT_FOUND_ERROR)
 
         if sender_user_id:
-
             if chat_instance.type == Chat.Type.PERSONAL:
                 raise ValueError(CANT_REMOVE_USER_FROM_PERSONAL_CHAT)
 
-            if not check_user_is_chat_author(chat=chat_instance, user_id=sender_user_id):
+            if not check_user_is_chat_author(
+                chat=chat_instance, user_id=sender_user_id
+            ):
                 raise ValueError(
                     YOU_DONT_HAVE_PERMISSIONS_TO_REMOVE_USER_FROM_THIS_CHAT_ERROR
                 )
@@ -74,18 +78,15 @@ def validate_input_data(data: chat_data) -> None:
         raise ValueError(CHAT_NOT_FOUND_ERROR)
 
 
-def remove_user_from_chat(*, 
-        user_id: int, 
-        chat: Chat, 
-        sender_user_id: Optional[int] = None
-    ) -> str:
-    user_to_remove = find_user_in_chat_by_id(
-        users=chat.users,
-        user_id=user_id
-    )
+def remove_user_from_chat(
+    *, user_id: int, chat: Chat, sender_user_id: Optional[int] = None
+) -> str:
+    user_to_remove = find_user_in_chat_by_id(users=chat.users, user_id=user_id)
 
     if user_to_remove:
-        if (chat.type == Chat.Type.GROUP or chat.type == Chat.Type.EVENT_GROUP) and sender_user_id:
+        if (
+            chat.type == Chat.Type.GROUP or chat.type == Chat.Type.EVENT_GROUP
+        ) and sender_user_id:
             user_to_remove["removed"] = True
         else:
             chat.users.remove(user_to_remove)
@@ -98,10 +99,10 @@ def remove_user_from_chat(*,
 
 def remove_user_from_chat_consumer() -> None:
     consumer: KafkaConsumer = KafkaConsumer(
-        TOPIC_NAME, **settings.KAFKA_CONSUMER_CONFIG)
+        TOPIC_NAME, **settings.KAFKA_CONSUMER_CONFIG
+    )
 
     for data in consumer:
-
         request_id = data.value.get("request_id")
 
         try:
@@ -109,7 +110,7 @@ def remove_user_from_chat_consumer() -> None:
             response_data = remove_user_from_chat(
                 user_id=data.value.get("user_id"),
                 chat=chat_instance,
-                sender_user_id=data.value.get("sender_user_id")
+                sender_user_id=data.value.get("sender_user_id"),
             )
             default_producer(
                 RESPONSE_TOPIC_NAME,
@@ -117,8 +118,8 @@ def remove_user_from_chat_consumer() -> None:
                     status=RESPONSE_STATUSES["SUCCESS"],
                     data=response_data,
                     message_type=MESSAGE_TYPE,
-                    request_id=request_id
-                )
+                    request_id=request_id,
+                ),
             )
         except ValueError as err:
             default_producer(
@@ -127,6 +128,6 @@ def remove_user_from_chat_consumer() -> None:
                     status=RESPONSE_STATUSES["ERROR"],
                     data=str(err),
                     message_type=MESSAGE_TYPE,
-                    request_id=request_id
-                )
+                    request_id=request_id,
+                ),
             )

@@ -4,19 +4,18 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('chat', '0006_alter_chat_name'),
+        ("chat", "0006_alter_chat_name"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='messsage',
-            name='readed',
+            model_name="messsage",
+            name="readed",
         ),
         migrations.AddField(
-            model_name='messsage',
-            name='readed_by',
+            model_name="messsage",
+            name="readed_by",
             field=models.JSONField(null=True),
         ),
     ]
