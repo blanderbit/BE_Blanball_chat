@@ -29,7 +29,7 @@ RESPONSE_TOPIC_NAME: str = "delete_chat_response"
 MESSAGE_TYPE: str = "delete_chat"
 
 
-CHAT_ID_NOT_PROVIDED: str = "chat_id_not_provided"
+CHAT_ID_OR_EVENT_ID_NOT_PROVIDED_ERROR: str = "chat_id_or_event_id_not_provided"
 USER_ID_NOT_PROVIDED: str = "user_id_not_provided"
 CHAT_NOT_FOUND_ERROR: str = "chat_not_found"
 YOU_DONT_HAVE_PERMISSIONS_TO_DELETE_THIS_CHAT_ERROR: str = (
@@ -44,15 +44,19 @@ chat_data = dict[str, Any]
 def validate_input_data(data: chat_data) -> None:
     user_id = data.get("user_id")
     chat_id = data.get("chat_id")
+    event_id = data.get("event_id")
 
-    if not chat_id:
-        raise ValueError(CHAT_ID_NOT_PROVIDED)
+    if not event_id and not chat_id:
+        raise ValueError(CHAT_ID_OR_EVENT_ID_NOT_PROVIDED_ERROR)
     if not user_id:
         raise ValueError(USER_ID_NOT_PROVIDED)
 
     try:
         global chat_instance
-        chat_instance = Chat.objects.get(id=chat_id)
+        if chat_id:
+            chat_instance = Chat.objects.get(id=chat_id)
+        else:
+            chat_instance = Chat.objects.filter(event_id=event_id)[0]
 
         if (
             chat_instance.type == Chat.Type.GROUP
