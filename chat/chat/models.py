@@ -50,6 +50,9 @@ class Chat(models.Model):
             "image": self.image,
         }
 
+    def is_group(self) -> bool:
+        return self.type == Chat.Type.GROUP or self.type == Chat.Type.EVENT_GROUP
+
     @staticmethod
     def create_user_data_before_add_to_chat(
         *,

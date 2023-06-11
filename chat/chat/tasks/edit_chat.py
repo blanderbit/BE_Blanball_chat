@@ -9,7 +9,6 @@ from chat.tasks.default_producer import (
 )
 from chat.utils import (
     RESPONSE_STATUSES,
-    check_is_chat_group,
     check_user_is_chat_admin,
     generate_response,
     get_chat,
@@ -48,9 +47,9 @@ def validate_input_data(data: chat_data) -> None:
     global chat_instance
     chat_instance = get_chat(chat_id=chat_id, event_id=event_id)
 
-    if not user_id and check_is_chat_group(chat=chat_instance):
+    if not user_id and chat_instance.is_group():
         raise ValueError(USER_ID_NOT_PROVIDED)
-    elif user_id and check_is_chat_group(chat=chat_instance):
+    elif user_id and chat_instance.is_group():
         if not check_user_is_chat_admin(chat=chat_instance, user_id=user_id):
             raise ValueError(YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_CHAT_ERROR)
 
