@@ -57,7 +57,7 @@ def set_chat_type(data: chat_data) -> str:
     return chat_type
 
 
-def create_chat(data: chat_data) -> chat_data:
+def create_chat(data: chat_data) -> Optional[chat_data]:
     users = data.get("users", [])
     event_id = data.get("event_id")
     users.append(data["author"])

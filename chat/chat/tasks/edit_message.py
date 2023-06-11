@@ -12,29 +12,32 @@ from chat.tasks.default_producer import (
 from chat.utils import (
     RESPONSE_STATUSES,
     generate_response,
-    get_chat,
+    get_message,
     remove_unnecessary_data,
     check_user_is_chat_member,
 )
 
 # the name of the main topic that we
 # are listening to receive data from outside
-TOPIC_NAME: str = "create_message"
+TOPIC_NAME: str = "edit_message"
 
 # the name of the topic to which we send the answer
-RESPONSE_TOPIC_NAME: str = "create_message_response"
+RESPONSE_TOPIC_NAME: str = "edit_message_response"
 
-CHAT_ID_NOT_PROVIDED_ERROR: str = "chat_id_not_provided"
 USER_ID_NOT_PROVIDED_ERROR: str = "user_id_not_provided"
+MESSAGE_ID_NOT_PROVIDED: str = "message_id_not_provided"
 MESSAGE_NOT_PROVIDED_ERROR: str = "message_not_provided"
-CANT_SEND_MESSAGE_IN_DISABLED_CHAT_ERROR: str = "cant_send_message_in_disabled_chat"
-PROVIDED_DATA_INVALID_TO_CREATE_THE_MESSAGE_ERROR: str = "provided_data_invalid_to_create_the_message"
+CANT_EDIT_MESSAGE_IN_DISABLED_CHAT_ERROR: str = "cant_edit_message_in_disabled_chat"
+PROVIDED_DATA_INVALID_TO_EDIT_THE_MESSAGE_ERROR: str = "provided_data_invalid_to_edit_the_message"
+TIME_TO_EDIT_THE_MESSAGE_EXPIRED_ERROR: str = "time_to_edit_the_message_expired"
+YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_MESSAGE_ERROR: str = "you_dont_have_permissions_to_edit_this_message"
 CHAT_NOT_FOUND_ERROR: str = "chat_not_found"
-MESSAGE_CREATED_SUCCESS: str = "message_created"
+MESSAGE_EDITED_SUCCESS: str = "message_edited"
 
-CREATE_MESSAGE_FIELDS: list[str] = ["sender_id", "text", "chat"]
 
-MESSAGE_TYPE: str = "create_message"
+EDIT_MESSAGE_FIELDS: list[str] = ["text"]
+
+MESSAGE_TYPE: str = "edit_message"
 
 
 message_data = dict[str, Any]
@@ -42,47 +45,52 @@ message_data = dict[str, Any]
 
 def validate_input_data(data: message_data) -> None:
     user_id: Optional[int] = data.get("user_id")
-    chat_id: Optional[int] = data.get("chat_id")
-    message_text: Optional[str] = data.get("text")
+    message_id: Optional[int] = data.get("message_id")
 
-    if not chat_id:
-        raise ValueError(CHAT_ID_NOT_PROVIDED_ERROR)
     if not user_id:
         raise ValueError(USER_ID_NOT_PROVIDED_ERROR)
-    if not message_text:
-        raise ValueError(MESSAGE_NOT_PROVIDED_ERROR)
+    if not message_id:
+        raise ValueError(MESSAGE_ID_NOT_PROVIDED)
 
-    global chat_instance
-    chat_instance = get_chat(chat_id=chat_id)
+    global message_instance
+    message_instance = get_message(message_id=message_id)
+    chat_instance = message_instance.chat
 
     if not check_user_is_chat_member(chat=chat_instance, user_id=user_id):
         raise ValueError(CHAT_NOT_FOUND_ERROR)
 
+    if message_instance.sender_id != user_id:
+        raise ValueError(YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_MESSAGE_ERROR)
+
     if chat_instance.disabled:
-        raise ValueError(CANT_SEND_MESSAGE_IN_DISABLED_CHAT_ERROR)
+        raise ValueError(CANT_EDIT_MESSAGE_IN_DISABLED_CHAT_ERROR)
+
+    if message_instance.is_expired_to_edit():
+        raise ValueError(TIME_TO_EDIT_THE_MESSAGE_EXPIRED_ERROR)
 
 
-def prepare_data_before_create_message(*, data: message_data) -> message_data:
-    data["chat"] = chat_instance
-    data["sender_id"] = data["user_id"]
+def prepare_data_before_edit_message(*, data: message_data) -> message_data:
     prepared_data = remove_unnecessary_data(
-        data, *CREATE_MESSAGE_FIELDS
+        data, *EDIT_MESSAGE_FIELDS
     )
 
     return prepared_data
 
 
-def create_message(*, data: message_data) -> Optional[str]:
+def edit_message(*, message: Messsage, new_data: message_data) -> Optional[str]:
     try:
-        prepared_data = prepare_data_before_create_message(data=data)
-        Messsage.objects.create(**prepared_data)
+        prepared_data = prepare_data_before_edit_message(data=new_data)
 
-        return MESSAGE_CREATED_SUCCESS
+        message.__dict__.update(prepared_data)
+        message.edited = True
+        message.save()
+
+        return MESSAGE_EDITED_SUCCESS
     except Exception:
-        raise ValueError(PROVIDED_DATA_INVALID_TO_CREATE_THE_MESSAGE_ERROR)
+        raise ValueError(PROVIDED_DATA_INVALID_TO_EDIT_THE_MESSAGE_ERROR)
 
 
-def create_message_consumer() -> None:
+def edit_message_consumer() -> None:
     consumer: KafkaConsumer = KafkaConsumer(
         TOPIC_NAME, **settings.KAFKA_CONSUMER_CONFIG
     )
@@ -90,8 +98,9 @@ def create_message_consumer() -> None:
     for data in consumer:
         try:
             validate_input_data(data.value)
-            response_data = create_message(
-                data=data.value,
+            response_data = edit_message(
+                message=message_instance,
+                new_data=data.value["new_data"],
             )
             default_producer(
                 RESPONSE_TOPIC_NAME,

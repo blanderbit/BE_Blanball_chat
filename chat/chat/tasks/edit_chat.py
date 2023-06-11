@@ -59,7 +59,7 @@ def validate_input_data(data: chat_data) -> None:
             raise ValueError(YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_CHAT_ERROR)
 
 
-def edit_chat(*, chat: Chat, new_data: chat_data) -> None:
+def edit_chat(*, chat: Chat, new_data: chat_data) -> Optional[str]:
 
     try:
         prepared_data = remove_unnecessary_data(
@@ -67,10 +67,10 @@ def edit_chat(*, chat: Chat, new_data: chat_data) -> None:
         )
         chat.__dict__.update(prepared_data)
         chat.save()
+
+        return CHAT_EDITED_SUCCESS
     except Exception:
         raise ValueError(PROVIDED_DATA_INVALID_TO_EDIT_THE_CHAT_ERROR)
-
-    return CHAT_EDITED_SUCCESS
 
 
 def edit_chat_consumer() -> None:

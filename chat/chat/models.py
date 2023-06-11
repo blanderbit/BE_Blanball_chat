@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Optional, Union, final
 
 from django.core.validators import (
@@ -100,6 +100,10 @@ class Messsage(models.Model):
 
     def __str__(self) -> str:
         return self.text
+
+    def is_expired_to_edit(self) -> bool:
+        ten_minutes_ago = datetime.now() - timedelta(minutes=10)
+        return self.time_created <= ten_minutes_ago
 
     @staticmethod
     def get_all() -> QuerySet["Chat"]:

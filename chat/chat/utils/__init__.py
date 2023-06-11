@@ -26,8 +26,11 @@ from chat.utils.get_chat import (
     get_chat as get_chat,
 )
 from chat.utils.custom_pagination import (
-    custom_pagination as custom_pagination
+    custom_pagination as custom_pagination,
 )
-from chat.chat.utils.remove_unnecessary_data import (
-    remove_unnecessary_data as remove_unnecessary_data
+from chat.utils.remove_unnecessary_data import (
+    remove_unnecessary_data as remove_unnecessary_data,
+)
+from chat.utils.get_message import (
+    get_message as get_message,
 )
