@@ -9,9 +9,9 @@ from chat.tasks.default_producer import (
 )
 from chat.utils import (
     RESPONSE_STATUSES,
-    generate_response,
     check_is_chat_group,
     check_user_is_chat_author,
+    generate_response,
     get_chat,
 )
 
@@ -24,7 +24,9 @@ RESPONSE_TOPIC_NAME: str = "edit_chat_response"
 CHAT_ID_OR_EVENT_ID_NOT_PROVIDED_ERROR: str = "chat_id_or_event_id_not_provided"
 CHAT_EDITED_SUCCESS: str = "chat_edited"
 USER_ID_NOT_PROVIDED: str = "user_id_not_provided"
-YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_CHAT_ERROR: str = "you_dont_have_permissions_to_edit_this_chat"
+YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_CHAT_ERROR: str = (
+    "you_dont_have_permissions_to_edit_this_chat"
+)
 CHAT_EDITED_SUCCESS: str = "chat_edited_success"
 
 KEYS_IN_NEW_DATA_TO_KEEP: list[str] = ["name", "image"]
@@ -53,12 +55,20 @@ def validate_input_data(data: chat_data) -> None:
             raise ValueError(YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_CHAT_ERROR)
 
 
-def prepare_new_data_before_edit_chat(dictionary: dict[str, Any], *keys_to_keep: list[str]) -> dict[str, Any]:
-    return {key: dictionary.pop(key) for key in list(dictionary.keys()) if key in keys_to_keep}
+def prepare_new_data_before_edit_chat(
+    dictionary: dict[str, Any], *keys_to_keep: list[str]
+) -> dict[str, Any]:
+    return {
+        key: dictionary.pop(key)
+        for key in list(dictionary.keys())
+        if key in keys_to_keep
+    }
 
 
 def edit_chat(*, chat: Chat, new_data: chat_data) -> None:
-    prepared_data = prepare_new_data_before_edit_chat(new_data, *KEYS_IN_NEW_DATA_TO_KEEP)
+    prepared_data = prepare_new_data_before_edit_chat(
+        new_data, *KEYS_IN_NEW_DATA_TO_KEEP
+    )
     chat.__dict__.update(prepared_data)
     chat.save()
 
@@ -74,8 +84,7 @@ def edit_chat_consumer() -> None:
         try:
             validate_input_data(data.value)
             response_data = edit_chat(
-                chat=chat_instance,
-                new_data=data.value.get("new_data")
+                chat=chat_instance, new_data=data.value.get("new_data")
             )
             default_producer(
                 RESPONSE_TOPIC_NAME,

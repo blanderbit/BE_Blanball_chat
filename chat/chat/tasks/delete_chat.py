@@ -13,12 +13,12 @@ from chat.tasks.remove_user_from_chat import (
 from chat.utils import (
     RESPONSE_STATUSES,
     check_is_all_users_deleted_personal_chat,
+    check_is_chat_group,
     check_user_is_chat_author,
     check_user_is_chat_member,
     find_user_in_chat_by_id,
     generate_response,
     get_chat,
-    check_is_chat_group,
 )
 
 # the name of the main topic that we
