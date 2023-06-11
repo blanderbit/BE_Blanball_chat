@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 
 from django.conf import settings
 from kafka import KafkaConsumer
@@ -29,8 +29,8 @@ chat_data = dict[str, Any]
 
 
 def validate_input_data(data: chat_data) -> None:
-    chat_id = data.get("chat_id")
-    event_id = data.get("event_id")
+    chat_id: Optional[int] = data.get("chat_id")
+    event_id: Optional[int] = data.get("event_id")
 
     if not event_id and not chat_id:
         raise ValueError(CHAT_ID_OR_EVENT_ID_NOT_PROVIDED_ERROR)

@@ -2,9 +2,6 @@ from chat.utils.checks_users_in_chat import (
     check_is_all_users_deleted_personal_chat as check_is_all_users_deleted_personal_chat,
 )
 from chat.utils.checks_users_in_chat import (
-    check_is_chat_disabled as check_is_chat_disabled,
-)
-from chat.utils.checks_users_in_chat import (
     check_user_is_chat_author as check_user_is_chat_author,
 )
 from chat.utils.checks_users_in_chat import (
@@ -30,4 +27,7 @@ from chat.utils.get_chat import (
 )
 from chat.utils.custom_pagination import (
     custom_pagination as custom_pagination
+)
+from chat.chat.utils.remove_unnecessary_data import (
+    remove_unnecessary_data as remove_unnecessary_data
 )

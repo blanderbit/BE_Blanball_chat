@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 
 from django.conf import settings
 from kafka import KafkaConsumer
@@ -12,6 +12,7 @@ from chat.utils import (
     check_user_is_chat_admin,
     generate_response,
     get_chat,
+    remove_unnecessary_data,
 )
 
 # the name of the main topic that we
@@ -23,6 +24,8 @@ RESPONSE_TOPIC_NAME: str = "edit_chat_response"
 CHAT_ID_OR_EVENT_ID_NOT_PROVIDED_ERROR: str = "chat_id_or_event_id_not_provided"
 CHAT_EDITED_SUCCESS: str = "chat_edited"
 USER_ID_NOT_PROVIDED: str = "user_id_not_provided"
+CANT_EDIT_DISABLED_CHAT_ERROR: str = "chat_edit_disabled_chat"
+PROVIDED_DATA_INVALID_TO_EDIT_THE_CHAT_ERROR: str = "provided_data_invalid_to_edit_the_chat"
 YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_CHAT_ERROR: str = (
     "you_dont_have_permissions_to_edit_this_chat"
 )
@@ -37,9 +40,9 @@ chat_data = dict[str, Any]
 
 
 def validate_input_data(data: chat_data) -> None:
-    chat_id = data.get("chat_id")
-    event_id = data.get("event_id")
-    user_id = data.get("user_id")
+    chat_id: Optional[int] = data.get("chat_id")
+    event_id: Optional[int] = data.get("event_id")
+    user_id: Optional[int] = data.get("user_id")
 
     if not event_id and not chat_id:
         raise ValueError(CHAT_ID_OR_EVENT_ID_NOT_PROVIDED_ERROR)
@@ -47,6 +50,8 @@ def validate_input_data(data: chat_data) -> None:
     global chat_instance
     chat_instance = get_chat(chat_id=chat_id, event_id=event_id)
 
+    if chat_instance.disabled:
+        raise ValueError(CANT_EDIT_DISABLED_CHAT_ERROR)
     if not user_id and chat_instance.is_group():
         raise ValueError(USER_ID_NOT_PROVIDED)
     elif user_id and chat_instance.is_group():
@@ -54,22 +59,16 @@ def validate_input_data(data: chat_data) -> None:
             raise ValueError(YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_CHAT_ERROR)
 
 
-def prepare_new_data_before_edit_chat(
-    dictionary: dict[str, Any], *keys_to_keep: list[str]
-) -> dict[str, Any]:
-    return {
-        key: dictionary.pop(key)
-        for key in list(dictionary.keys())
-        if key in keys_to_keep
-    }
-
-
 def edit_chat(*, chat: Chat, new_data: chat_data) -> None:
-    prepared_data = prepare_new_data_before_edit_chat(
-        new_data, *KEYS_IN_NEW_DATA_TO_KEEP
-    )
-    chat.__dict__.update(prepared_data)
-    chat.save()
+
+    try:
+        prepared_data = remove_unnecessary_data(
+            new_data, *KEYS_IN_NEW_DATA_TO_KEEP
+        )
+        chat.__dict__.update(prepared_data)
+        chat.save()
+    except Exception:
+        raise ValueError(PROVIDED_DATA_INVALID_TO_EDIT_THE_CHAT_ERROR)
 
     return CHAT_EDITED_SUCCESS
 

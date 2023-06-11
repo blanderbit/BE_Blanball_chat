@@ -19,6 +19,9 @@ from chat.tasks.remove_user_from_chat import (
 from chat.tasks.get_chats_list import (
     get_chats_list_consumer as get_chats_list_consumer,
 )
+from chat.tasks.create_message import (
+    create_message_consumer as create_message_consumer,
+)
 
 ALL_TASKS = [
     create_chat_consumer,
@@ -28,4 +31,5 @@ ALL_TASKS = [
     disable_chat_consumer,
     edit_chat_consumer,
     get_chats_list_consumer,
+    create_message_consumer,
 ]

@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 
 from django.conf import settings
 from kafka import KafkaConsumer
@@ -22,6 +22,7 @@ CHAT_NAME_NOT_PROVIDED_ERROR: str = "name_not_provided"
 CHAT_AUTOR_NOT_PROVIDED_ERROR: str = "author_not_provided"
 REQUEST_ID_NOT_PROVIDED_ERROR: str = "request_id_not_provided"
 CHAT_EVENT_ID_NOT_PROVIDED: str = "event_id_not_provided"
+PROVIDED_DATA_INVALID_TO_CREATE_THE_CHAT_ERROR: str = "provided_data_invalid_to_create_the_chat"
 
 MESSAGE_TYPE: str = "create_chat"
 
@@ -30,12 +31,13 @@ chat_data = dict[str, Any]
 
 
 def validate_input_data(data: chat_data) -> None:
-    if not data.get("name"):
+    name: Optional[str] = data.get("name")
+    author: Optional[str] = data.get("author")
+
+    if not name:
         raise ValueError(CHAT_NAME_NOT_PROVIDED_ERROR)
-    if not data.get("author"):
+    if not author:
         raise ValueError(CHAT_AUTOR_NOT_PROVIDED_ERROR)
-    if not data.get("request_id"):
-        raise ValueError(REQUEST_ID_NOT_PROVIDED_ERROR)
 
 
 def set_chat_type(data: chat_data) -> str:
@@ -61,20 +63,22 @@ def create_chat(data: chat_data) -> chat_data:
     users.append(data["author"])
     if data.get("user"):
         users.append(data.get("user"))
-
-    chat = Chat.objects.create(
-        name=data["name"],
-        type=set_chat_type(data),
-        event_id=event_id,
-        users=[
-            Chat.create_user_data_before_add_to_chat(
-                is_author=user == data["author"],
-                user_id=user,
-            )
-            for user in users
-        ],
-    )
-    return chat.get_all_data()
+    try:
+        chat = Chat.objects.create(
+            name=data["name"],
+            type=set_chat_type(data),
+            event_id=event_id,
+            users=[
+                Chat.create_user_data_before_add_to_chat(
+                    is_author=user == data["author"],
+                    user_id=user,
+                )
+                for user in users
+            ],
+        )
+        return chat.get_all_data()
+    except Exception:
+        raise ValueError(PROVIDED_DATA_INVALID_TO_CREATE_THE_CHAT_ERROR)
 
 
 def create_chat_consumer() -> None:

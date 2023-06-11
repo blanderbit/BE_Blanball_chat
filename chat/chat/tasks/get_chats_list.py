@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 
 from django.conf import settings
 from kafka import KafkaConsumer
@@ -35,12 +35,12 @@ def validate_input_data(data: chat_data) -> None:
 
 
 def get_chats_list(*, data: chat_data) -> None:
-    user_id: int = data.get("user_id")
+    user_id: Optional[int] = data.get("user_id")
     offset: int = data.get("offset", 10)
     page: int = data.get("page", 1)
-    search: str = data.get("search")
+    search: Optional[str] = data.get("search")
 
-    serializible_fields = ["id", "name", "type", "image", "disabled"]
+    serializible_fields: list[str] = ["id", "name", "type", "image", "disabled"]
 
     queryset = Chat.get_only_available_chats_for_user(user_id=user_id)
 

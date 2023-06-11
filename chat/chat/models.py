@@ -88,11 +88,12 @@ class Chat(models.Model):
 @final
 class Messsage(models.Model):
     sender_id: int = models.BigIntegerField(validators=[MinValueValidator(1)])
+    chat: Chat = models.ForeignKey(Chat, on_delete=models.CASCADE)
     text: str = models.CharField(max_length=500)
     time_created: datetime = models.DateTimeField(auto_now_add=True)
-    disabled: bool = models.BooleanField(default=False)
     readed_by: bool = models.JSONField(null=True)
-    chat: Chat = models.ForeignKey(Chat, on_delete=models.CASCADE)
+    disabled: bool = models.BooleanField(default=False)
+    edited: bool = models.BooleanField(default=False)
 
     def __repr__(self) -> str:
         return "<Messsage %s>" % self.id
