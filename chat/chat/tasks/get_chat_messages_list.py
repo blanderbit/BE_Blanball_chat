@@ -3,7 +3,10 @@ from typing import Any, Optional
 from django.conf import settings
 from kafka import KafkaConsumer
 
-from chat.models import Chat
+from chat.models import (
+    Chat,
+    Messsage
+)
 from chat.tasks.default_producer import (
     default_producer,
 )
@@ -11,60 +14,74 @@ from chat.utils import (
     RESPONSE_STATUSES,
     generate_response,
     custom_pagination,
+    get_chat,
+    check_user_is_chat_member,
 )
 
 # the name of the main topic that we
 # are listening to receive data from outside
-TOPIC_NAME: str = "get_chats_list"
+TOPIC_NAME: str = "get_chat_messages_list"
 
 # the name of the topic to which we send the answer
-RESPONSE_TOPIC_NAME: str = "get_chats_list_response"
-USER_ID_NOT_PROVIDED: str = "user_id_not_provided"
+RESPONSE_TOPIC_NAME: str = "get_chat_messages_list_response"
+USER_ID_NOT_PROVIDED_ERROR: str = "user_id_not_provided"
+CHAT_ID_NOT_PROVIDED_ERROR: str = "chat_id_not_provided"
+CHAT_NOT_FOUND_ERROR: str = "chat_not_found"
 
-MESSAGE_TYPE: str = "get_chats_list"
+MESSAGE_TYPE: str = "get_chat_messages_list"
 
-CHAT_FIELDS_TO_SERIALIZE: list[str] = [
+MESSAGE_FIELDS_TO_SERIALIZE: list[str] = [
     "id",
-    "name",
-    "type",
-    "image",
+    "sender_id",
+    "text",
+    "string_time_created",
+    "readed_by",
     "disabled",
-    "chat_last_message"
+    "edited"
 ]
-
 
 chat_data = dict[str, Any]
 
 
 def validate_input_data(data: chat_data) -> None:
     user_id: int = data.get("user_id")
+    chat_id: int = data.get("chat_id")
 
     if not user_id:
-        raise ValueError(USER_ID_NOT_PROVIDED)
+        raise ValueError(USER_ID_NOT_PROVIDED_ERROR)
+    if not chat_id:
+        raise ValueError(CHAT_ID_NOT_PROVIDED_ERROR)
+
+    global chat_instance
+    chat_instance = get_chat(chat_id=chat_id)
+
+    if not check_user_is_chat_member(chat=chat_instance, user_id=user_id):
+        raise ValueError(CHAT_NOT_FOUND_ERROR)
 
 
-def get_chats_list(*, data: chat_data) -> None:
+def get_chat_messages_list(*, data: chat_data) -> None:
     user_id: Optional[int] = data.get("user_id")
     offset: int = data.get("offset", 10)
     page: int = data.get("page", 1)
     search: Optional[str] = data.get("search")
 
-    queryset = Chat.get_only_available_chats_for_user(user_id=user_id)
+    queryset = Messsage.objects.filter(
+        sender_id=user_id,
+        chat__id=chat_instance.id
+    )
 
     if search:
-        queryset = Chat.get_only_available_chats_for_user(
-            user_id=user_id
-        ).filter(name__icontains=search)
+        queryset = queryset.filter(text__icontains=search)
 
     return custom_pagination(
         queryset=queryset,
         offset=offset,
         page=page,
-        fields=CHAT_FIELDS_TO_SERIALIZE
+        fields=MESSAGE_FIELDS_TO_SERIALIZE
     )
 
 
-def get_chats_list_consumer() -> None:
+def get_chat_messages_list_consumer() -> None:
     consumer: KafkaConsumer = KafkaConsumer(
         TOPIC_NAME, **settings.KAFKA_CONSUMER_CONFIG
     )
@@ -73,7 +90,7 @@ def get_chats_list_consumer() -> None:
         request_id = data.value.get("request_id")
         try:
             validate_input_data(data.value)
-            response_data = get_chats_list(
+            response_data = get_chat_messages_list(
                 data=data.value
             )
             default_producer(

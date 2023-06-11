@@ -25,6 +25,9 @@ from chat.tasks.create_message import (
 from chat.tasks.edit_message import (
     edit_message_consumer as edit_message_consumer
 )
+from chat.tasks.get_chat_messages_list import (
+    get_chat_messages_list_consumer as get_chat_messages_list_consumer
+)
 
 ALL_TASKS = [
     create_chat_consumer,
@@ -36,4 +39,5 @@ ALL_TASKS = [
     get_chats_list_consumer,
     create_message_consumer,
     edit_message_consumer,
+    get_chat_messages_list_consumer,
 ]
