@@ -18,6 +18,7 @@ from chat.utils import (
     find_user_in_chat_by_id,
     generate_response,
     get_chat,
+    check_is_chat_group,
 )
 
 # the name of the main topic that we
@@ -55,10 +56,7 @@ def validate_input_data(data: chat_data) -> None:
     global chat_instance
     chat_instance = get_chat(chat_id=chat_id, event_id=event_id)
 
-    if (
-        chat_instance.type == Chat.Type.GROUP
-        or chat_instance.type == Chat.Type.EVENT_GROUP
-    ):
+    if check_is_chat_group(chat=chat_instance):
         if not check_user_is_chat_author(chat=chat_instance, user_id=user_id):
             raise ValueError(YOU_DONT_HAVE_PERMISSIONS_TO_DELETE_THIS_CHAT_ERROR)
     else:

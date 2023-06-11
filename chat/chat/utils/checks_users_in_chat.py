@@ -23,5 +23,9 @@ def check_user_is_chat_member(*, chat: Chat, user_id: int) -> bool:
     return any(user.get("user_id") == user_id for user in chat.users)
 
 
+def check_is_chat_group(*, chat: Chat) -> bool:
+    return chat.type == Chat.Type.GROUP or chat.type == Chat.Type.EVENT_GROUP
+
+
 def check_is_chat_disabled(*, chat: Chat) -> bool:
     return chat.disabled

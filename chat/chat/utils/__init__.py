@@ -2,6 +2,9 @@ from chat.utils.checks_users_in_chat import (
     check_is_all_users_deleted_personal_chat as check_is_all_users_deleted_personal_chat,
 )
 from chat.utils.checks_users_in_chat import (
+    check_is_chat_group as check_is_chat_group
+)
+from chat.utils.checks_users_in_chat import (
     check_is_chat_disabled as check_is_chat_disabled,
 )
 from chat.utils.checks_users_in_chat import (
