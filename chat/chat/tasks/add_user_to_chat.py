@@ -10,6 +10,7 @@ from chat.tasks.default_producer import (
 from chat.utils import (
     RESPONSE_STATUSES,
     generate_response,
+    check_user_is_chat_member,
     get_chat,
 )
 
@@ -49,7 +50,7 @@ def validate_input_data(data: chat_data) -> None:
 
     if chat_instance.type == Chat.Type.PERSONAL:
         raise ValueError(CANT_ADD_USER_TO_PERSONAL_CHAT_ERROR)
-    elif any(user["user_id"] == user_id for user in chat_instance.users):
+    elif check_user_is_chat_member(chat=chat_instance, user_id=user_id):
         raise ValueError(CANT_ADD_USER_WHO_IS_ALREADY_IN_THE_CHAT_ERROR)
 
 

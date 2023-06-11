@@ -15,6 +15,12 @@ def check_user_is_chat_author(*, chat: Chat, user_id: int) -> bool:
     )
 
 
+def check_user_is_chat_admin(*, chat: Chat, user_id: int) -> bool:
+    return any(
+        user.get("user_id") == user_id and (user.get("author") or user.get("admin")) for user in chat.users
+    )
+
+
 def check_is_all_users_deleted_personal_chat(*, chat: Chat) -> bool:
     return all(user.get("chat_deleted") for user in chat.users)
 
