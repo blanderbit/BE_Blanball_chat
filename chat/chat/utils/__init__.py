@@ -31,3 +31,6 @@ from chat.utils.generate_response import (
 from chat.utils.get_chat import (
     get_chat as get_chat,
 )
+from chat.utils.custom_pagination import (
+    custom_pagination as custom_pagination
+)

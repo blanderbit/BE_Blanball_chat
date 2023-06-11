@@ -69,11 +69,17 @@ class Chat(models.Model):
             "chat_deleted": is_chat_deleted,
         }
 
+    @staticmethod
+    def get_only_available_chats_for_user(user_id: int) -> QuerySet["Chat"]:
+        return Chat.objects.filter(users__0__user_id=user_id, users__0__chat_deleted=False)
+
     class Meta:
         # the name of the table in the database for this model
         db_table: str = "chat"
         verbose_name: str = "chat"
         verbose_name_plural: str = "chats"
+        # sorting database records for this model by default
+        ordering: list[str] = ["-id"]
 
 
 @final
