@@ -3,11 +3,9 @@ from typing import Any, Optional
 from django.conf import settings
 from kafka import KafkaConsumer
 
-from chat.errors import (
-    CHAT_NOT_FOUND_ERROR,
-)
 from chat.exceptions import (
-    NotProvidedException
+    NotProvidedException,
+    NotFoundException
 )
 from chat.tasks.default_producer import (
     default_producer,
@@ -55,7 +53,7 @@ def validate_input_data(data: chat_data) -> None:
     chat_instance = get_chat(chat_id=chat_id)
 
     if not check_user_in_chat(chat=chat_instance, user_id=user_id):
-        raise ValueError(CHAT_NOT_FOUND_ERROR)
+        raise NotFoundException(object="chat")
 
 
 def get_chat_messages_list(*, data: chat_data) -> None:

@@ -6,11 +6,9 @@ from kafka import KafkaConsumer
 from chat.tasks.default_producer import (
     default_producer,
 )
-from chat.errors import (
-    CHAT_NOT_FOUND_ERROR,
-)
 from chat.exceptions import (
-    NotProvidedException
+    NotProvidedException,
+    NotFoundException
 )
 from chat.utils import (
     RESPONSE_STATUSES,
@@ -43,7 +41,7 @@ def validate_input_data(data: dict[str, int]) -> None:
     chat_instance = get_chat(chat_id=chat_id)
 
     if not check_user_in_chat(chat=chat_instance, user_id=user_id):
-        raise ValueError(CHAT_NOT_FOUND_ERROR)
+        raise NotFoundException(object="chat")
 
 
 def get_chat_users_list(*, data: dict[str, int]) -> None:

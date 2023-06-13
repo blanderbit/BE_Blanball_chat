@@ -8,7 +8,6 @@ from chat.tasks.default_producer import (
     default_producer,
 )
 from chat.errors import (
-    USER_ID_NOT_PROVIDED_ERROR,
     PROVIDED_INVALID_DATA_ERROR,
 )
 from chat.exceptions import (

@@ -10,11 +10,9 @@ from chat.tasks.default_producer import (
 from chat.tasks.remove_user_from_chat import (
     remove_user_from_chat,
 )
-from chat.errors import (
-    CHAT_NOT_FOUND_ERROR,
-)
 from chat.exceptions import (
-    NotProvidedException
+    NotProvidedException,
+    NotFoundException
 )
 from chat.utils import (
     RESPONSE_STATUSES,
@@ -61,7 +59,7 @@ def validate_input_data(data: chat_data) -> None:
             raise ValueError(YOU_DONT_HAVE_PERMISSIONS_TO_DELETE_THIS_CHAT_ERROR)
     else:
         if not check_user_is_chat_member(chat=chat_instance, user_id=user_id):
-            raise ValueError(CHAT_NOT_FOUND_ERROR)
+            raise NotFoundException(object="chat")
 
 
 def set_chat_deleted_by_certain_user(user: dict[str, Any]) -> None:

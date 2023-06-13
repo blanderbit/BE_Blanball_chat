@@ -12,10 +12,10 @@ from chat.tasks.default_producer import (
 )
 from chat.errors import (
     PROVIDED_INVALID_DATA_ERROR,
-    CHAT_NOT_FOUND_ERROR,
 )
 from chat.exceptions import (
-    NotProvidedException
+    NotProvidedException,
+    NotFoundException
 )
 from chat.utils import (
     RESPONSE_STATUSES,
@@ -60,7 +60,7 @@ def validate_input_data(data: message_data) -> None:
     chat_instance = message_instance.chat.first()
 
     if not check_user_is_chat_member(chat=chat_instance, user_id=user_id):
-        raise ValueError(CHAT_NOT_FOUND_ERROR)
+        raise NotFoundException(object="chat")
 
     if message_instance.sender_id != user_id:
         raise ValueError(YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_MESSAGE_ERROR)

@@ -1,5 +1,1 @@
-USER_ID_NOT_PROVIDED_ERROR: str = "user_id_not_provided"
-CHAT_ID_OR_EVENT_ID_NOT_PROVIDED_ERROR: str = "chat_id_or_event_id_not_provided"
-CHAT_NOT_FOUND_ERROR: str = "chat_not_found"
-CHAT_ID_NOT_PROVIDED_ERROR: str = "chat_id_not_provided"
 PROVIDED_INVALID_DATA_ERROR: str = "provided_invalid_data_error"

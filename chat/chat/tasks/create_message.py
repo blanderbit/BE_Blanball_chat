@@ -7,11 +7,11 @@ from chat.tasks.default_producer import (
     default_producer,
 )
 from chat.errors import (
-    CHAT_NOT_FOUND_ERROR,
     PROVIDED_INVALID_DATA_ERROR,
 )
 from chat.exceptions import (
-    NotProvidedException
+    NotProvidedException,
+    NotFoundException
 )
 from chat.utils import (
     RESPONSE_STATUSES,
@@ -54,7 +54,7 @@ def validate_input_data(data: message_data) -> None:
     chat_instance = get_chat(chat_id=chat_id)
 
     if not check_user_is_chat_member(chat=chat_instance, user_id=user_id):
-        raise ValueError(CHAT_NOT_FOUND_ERROR)
+        raise NotFoundException(object="chat")
 
     if chat_instance.disabled:
         raise ValueError(CANT_SEND_MESSAGE_IN_DISABLED_CHAT_ERROR)

@@ -1,6 +1,7 @@
 from typing import Any, Optional
 
 from chat.models import Chat
+from chat.exceptions import NotFoundException
 
 
 def get_chat(*, chat_id: Optional[int] = None, event_id: Optional[int] = None) -> Chat:
@@ -10,7 +11,7 @@ def get_chat(*, chat_id: Optional[int] = None, event_id: Optional[int] = None) -
         else:
             chat_instance = Chat.objects.filter(event_id=event_id)[0]
     except Chat.DoesNotExist:
-        raise ValueError(CHAT_NOT_FOUND_ERROR)
+        raise NotFoundException(object="chat")
     except IndexError:
-        raise ValueError(CHAT_NOT_FOUND_ERROR)
+        raise NotFoundException(object="chat")
     return chat_instance
