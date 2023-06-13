@@ -8,7 +8,8 @@ from chat.tasks.default_producer import (
 )
 from chat.exceptions import (
     NotProvidedException,
-    NotFoundException
+    NotFoundException,
+    COMPARED_CHAT_EXCEPTIONS
 )
 from chat.utils import (
     RESPONSE_STATUSES,
@@ -77,7 +78,7 @@ def get_chat_users_list_consumer() -> None:
                     request_id=request_id
                 ),
             )
-        except ValueError as err:
+        except COMPARED_CHAT_EXCEPTIONS as err:
             default_producer(
                 RESPONSE_TOPIC_NAME,
                 generate_response(

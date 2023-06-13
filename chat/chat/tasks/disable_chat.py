@@ -8,7 +8,8 @@ from chat.tasks.default_producer import (
     default_producer,
 )
 from chat.exceptions import (
-    NotProvidedException
+    NotProvidedException,
+    COMPARED_CHAT_EXCEPTIONS,
 )
 from chat.utils import (
     RESPONSE_STATUSES,
@@ -72,7 +73,7 @@ def disable_chat_consumer() -> None:
                     request_id=request_id
                 ),
             )
-        except ValueError as err:
+        except COMPARED_CHAT_EXCEPTIONS as err:
             default_producer(
                 RESPONSE_TOPIC_NAME,
                 generate_response(

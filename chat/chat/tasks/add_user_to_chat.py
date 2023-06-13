@@ -10,6 +10,7 @@ from chat.tasks.default_producer import (
 from chat.exceptions import (
     NotProvidedException,
     PermissionsDeniedException,
+    COMPARED_CHAT_EXCEPTIONS,
 )
 from chat.utils import (
     RESPONSE_STATUSES,
@@ -94,7 +95,7 @@ def add_user_to_chat_consumer() -> None:
                     request_id=request_id,
                 ),
             )
-        except ValueError as err:
+        except COMPARED_CHAT_EXCEPTIONS as err:
             default_producer(
                 RESPONSE_TOPIC_NAME,
                 generate_response(

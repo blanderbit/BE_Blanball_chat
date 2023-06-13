@@ -11,7 +11,8 @@ from chat.tasks.default_producer import (
     default_producer,
 )
 from chat.exceptions import (
-    NotProvidedException
+    NotProvidedException,
+    COMPARED_CHAT_EXCEPTIONS,
 )
 from chat.utils import (
     RESPONSE_STATUSES,
@@ -106,7 +107,7 @@ def read_or_unread_messages_consumer() -> None:
                     message_type=MESSAGE_TYPE,
                 ),
             )
-        except ValueError as err:
+        except COMPARED_CHAT_EXCEPTIONS as err:
             default_producer(
                 RESPONSE_TOPIC_NAME,
                 generate_response(

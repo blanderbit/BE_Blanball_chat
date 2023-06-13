@@ -6,13 +6,12 @@ from kafka import KafkaConsumer
 from chat.tasks.default_producer import (
     default_producer,
 )
-from chat.errors import (
-    PROVIDED_INVALID_DATA_ERROR,
-)
 from chat.exceptions import (
     NotProvidedException,
     NotFoundException,
     PermissionsDeniedException,
+    InvalidDataException,
+    COMPARED_CHAT_EXCEPTIONS,
 )
 from chat.utils import (
     RESPONSE_STATUSES,
@@ -80,8 +79,9 @@ def create_message(*, data: message_data) -> Optional[str]:
             "message_data": message.get_all_data(),
             "users": chat_instance.users
         }
-    except Exception:
-        raise ValueError(PROVIDED_INVALID_DATA_ERROR)
+    except Exception as _err:
+        print(_err)
+        raise InvalidDataException
 
 
 def create_message_consumer() -> None:
@@ -106,7 +106,7 @@ def create_message_consumer() -> None:
                     request_id=request_id
                 ),
             )
-        except ValueError as err:
+        except COMPARED_CHAT_EXCEPTIONS as err:
             default_producer(
                 RESPONSE_TOPIC_NAME,
                 generate_response(

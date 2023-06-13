@@ -5,7 +5,8 @@ from kafka import KafkaConsumer
 
 from chat.exceptions import (
     NotProvidedException,
-    NotFoundException
+    NotFoundException,
+    COMPARED_CHAT_EXCEPTIONS,
 )
 from chat.tasks.default_producer import (
     default_producer,
@@ -95,7 +96,7 @@ def get_chat_messages_list_consumer() -> None:
                     request_id=request_id
                 ),
             )
-        except ValueError as err:
+        except COMPARED_CHAT_EXCEPTIONS as err:
             default_producer(
                 RESPONSE_TOPIC_NAME,
                 generate_response(

@@ -7,12 +7,11 @@ from chat.models import Chat
 from chat.tasks.default_producer import (
     default_producer,
 )
-from chat.errors import (
-    PROVIDED_INVALID_DATA_ERROR,
-)
 from chat.exceptions import (
     NotProvidedException,
     PermissionsDeniedException,
+    InvalidDataException,
+    COMPARED_CHAT_EXCEPTIONS,
 )
 from chat.utils import (
     RESPONSE_STATUSES,
@@ -75,8 +74,9 @@ def edit_chat(*, chat: Chat, new_data: chat_data) -> Optional[str]:
             "users": chat.users,
             "new_data": remove_unnecessary_data(chat.__dict__)
         }
-    except Exception:
-        raise ValueError(PROVIDED_INVALID_DATA_ERROR)
+    except Exception as _err:
+        print(_err)
+        raise InvalidDataException
 
 
 def edit_chat_consumer() -> None:
@@ -100,7 +100,7 @@ def edit_chat_consumer() -> None:
                     request_id=request_id
                 ),
             )
-        except ValueError as err:
+        except COMPARED_CHAT_EXCEPTIONS as err:
             default_producer(
                 RESPONSE_TOPIC_NAME,
                 generate_response(
