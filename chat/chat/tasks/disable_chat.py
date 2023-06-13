@@ -3,13 +3,13 @@ from typing import Any, Optional
 from django.conf import settings
 from kafka import KafkaConsumer
 
+from chat.exceptions import (
+    COMPARED_CHAT_EXCEPTIONS,
+    NotProvidedException,
+)
 from chat.models import Chat
 from chat.tasks.default_producer import (
     default_producer,
-)
-from chat.exceptions import (
-    NotProvidedException,
-    COMPARED_CHAT_EXCEPTIONS,
 )
 from chat.utils import (
     RESPONSE_STATUSES,
@@ -45,10 +45,7 @@ def disable_chat(*, chat: Chat) -> None:
     chat.disabled = True
     chat.save()
 
-    return {
-        "chat_id": chat.id,
-        "users": chat.users
-    }
+    return {"chat_id": chat.id, "users": chat.users}
 
 
 def disable_chat_consumer() -> None:
@@ -70,7 +67,7 @@ def disable_chat_consumer() -> None:
                     status=RESPONSE_STATUSES["SUCCESS"],
                     data=response_data,
                     message_type=MESSAGE_TYPE,
-                    request_id=request_id
+                    request_id=request_id,
                 ),
             )
         except COMPARED_CHAT_EXCEPTIONS as err:
@@ -80,6 +77,6 @@ def disable_chat_consumer() -> None:
                     status=RESPONSE_STATUSES["ERROR"],
                     data=str(err),
                     message_type=MESSAGE_TYPE,
-                    request_id=request_id
+                    request_id=request_id,
                 ),
             )

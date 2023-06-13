@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
-from decouple import config
 from typing import Any, Optional, Union, final
 
+from decouple import config
 from django.core.validators import (
     MinValueValidator,
 )
@@ -32,17 +32,18 @@ class Messsage(models.Model):
 
     def mark_as_read(self, user_id: int) -> None:
         if user_id != self.sender_id:
-            existing_users = [user['user_id'] for user in self.readed_by]
+            existing_users = [user["user_id"] for user in self.readed_by]
             if user_id not in existing_users:
-                self.readed_by.append({
-                    "user_id": user_id,
-                    "time_when_was_readed": str(timezone.now())
-                })
+                self.readed_by.append(
+                    {"user_id": user_id, "time_when_was_readed": str(timezone.now())}
+                )
                 self.save()
 
     def mark_as_unread(self, user_id: int) -> None:
         if user_id != self.sender_id:
-            self.readed_by = [message for message in self.readed_by if message["user_id"] != user_id]
+            self.readed_by = [
+                message for message in self.readed_by if message["user_id"] != user_id
+            ]
             self.save()
 
     def get_all_data(self) -> dict[str, Any]:
@@ -122,7 +123,7 @@ class Chat(models.Model):
 
     def unread_messages_count(self, user_id: int) -> int:
         filter_query: dict[str, int] = {
-            'user_id': user_id,
+            "user_id": user_id,
         }
         return self.messages.exclude(readed_by__contains=[filter_query]).count()
 
@@ -160,20 +161,20 @@ class Chat(models.Model):
 
     @staticmethod
     def get_only_available_chats_for_user(user_id: int) -> QuerySet["Chat"]:
-
         filter_query: dict[str, Union[int, bool]] = {
-            'user_id': user_id,
-            'chat_deleted': False,
+            "user_id": user_id,
+            "chat_deleted": False,
         }
-        return Chat.objects.filter(
-            users__contains=[filter_query]
-        ).annotate(
-            message_count=Count('messages')
-        ).order_by('-messages__time_created', "-time_created", '-message_count', "-id")
+        return (
+            Chat.objects.filter(users__contains=[filter_query])
+            .annotate(message_count=Count("messages"))
+            .order_by(
+                "-messages__time_created", "-time_created", "-message_count", "-id"
+            )
+        )
 
     @property
     def last_message(self) -> Optional[str]:
-
         message = Messsage.objects.filter(chat__id=self.id).last()
 
         if message:

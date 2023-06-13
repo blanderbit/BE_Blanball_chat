@@ -3,22 +3,22 @@ from typing import Any, Optional
 from django.conf import settings
 from kafka import KafkaConsumer
 
+from chat.exceptions import (
+    COMPARED_CHAT_EXCEPTIONS,
+    InvalidDataException,
+    NotFoundException,
+    NotProvidedException,
+    PermissionsDeniedException,
+)
 from chat.tasks.default_producer import (
     default_producer,
 )
-from chat.exceptions import (
-    NotProvidedException,
-    NotFoundException,
-    PermissionsDeniedException,
-    InvalidDataException,
-    COMPARED_CHAT_EXCEPTIONS,
-)
 from chat.utils import (
     RESPONSE_STATUSES,
+    check_user_is_chat_member,
     generate_response,
     get_chat,
     remove_unnecessary_data,
-    check_user_is_chat_member,
 )
 
 # the name of the main topic that we
@@ -62,9 +62,7 @@ def validate_input_data(data: message_data) -> None:
 
 def prepare_data_before_create_message(*, data: message_data) -> message_data:
     data["sender_id"] = data["user_id"]
-    prepared_data = remove_unnecessary_data(
-        data, *CREATE_MESSAGE_FIELDS
-    )
+    prepared_data = remove_unnecessary_data(data, *CREATE_MESSAGE_FIELDS)
 
     return prepared_data
 
@@ -77,7 +75,7 @@ def create_message(*, data: message_data) -> Optional[str]:
         return {
             "chat_id": chat_instance.id,
             "message_data": message.get_all_data(),
-            "users": chat_instance.users
+            "users": chat_instance.users,
         }
     except Exception as _err:
         print(_err)
@@ -103,7 +101,7 @@ def create_message_consumer() -> None:
                     status=RESPONSE_STATUSES["SUCCESS"],
                     data=response_data,
                     message_type=MESSAGE_TYPE,
-                    request_id=request_id
+                    request_id=request_id,
                 ),
             )
         except COMPARED_CHAT_EXCEPTIONS as err:
@@ -113,6 +111,6 @@ def create_message_consumer() -> None:
                     status=RESPONSE_STATUSES["ERROR"],
                     data=str(err),
                     message_type=MESSAGE_TYPE,
-                    request_id=request_id
+                    request_id=request_id,
                 ),
             )

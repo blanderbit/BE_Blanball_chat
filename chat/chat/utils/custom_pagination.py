@@ -1,14 +1,19 @@
 from typing import Optional
-from django.core.paginator import Paginator, InvalidPage
+
+from django.core.paginator import (
+    InvalidPage,
+    Paginator,
+)
 from django.db.models.query import QuerySet
 
 
-def custom_pagination(*,
-                      queryset: QuerySet,
-                      page: int = 1,
-                      offset: int = 10,
-                      fields: Optional[list[str]] = None
-                      ) -> dict:
+def custom_pagination(
+    *,
+    queryset: QuerySet,
+    page: int = 1,
+    offset: int = 10,
+    fields: Optional[list[str]] = None
+) -> dict:
     paginator = Paginator(queryset, offset)
 
     try:
@@ -25,12 +30,9 @@ def custom_pagination(*,
         raise ValueError("invalid_page")
 
 
-def custom_json_field_pagination(*,
-                                 model_instance,
-                                 field_name: str,
-                                 page: int = 1,
-                                 offset: int = 10
-                                 ) -> dict:
+def custom_json_field_pagination(
+    *, model_instance, field_name: str, page: int = 1, offset: int = 10
+) -> dict:
     queryset = getattr(model_instance, field_name)
     paginator = Paginator(queryset, offset)
 

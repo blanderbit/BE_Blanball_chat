@@ -4,19 +4,19 @@ from django.conf import settings
 from kafka import KafkaConsumer
 
 from chat.exceptions import (
-    NotProvidedException,
-    NotFoundException,
     COMPARED_CHAT_EXCEPTIONS,
+    NotFoundException,
+    NotProvidedException,
 )
 from chat.tasks.default_producer import (
     default_producer,
 )
 from chat.utils import (
     RESPONSE_STATUSES,
-    generate_response,
-    custom_pagination,
-    get_chat,
     check_user_in_chat,
+    custom_pagination,
+    generate_response,
+    get_chat,
 )
 
 # the name of the main topic that we
@@ -35,7 +35,7 @@ MESSAGE_FIELDS_TO_SERIALIZE: list[str] = [
     "string_time_created",
     "readed_by",
     "disabled",
-    "edited"
+    "edited",
 ]
 
 chat_data = dict[str, Any]
@@ -68,10 +68,7 @@ def get_chat_messages_list(*, data: chat_data) -> None:
         queryset = queryset.filter(text__icontains=search)
 
     return custom_pagination(
-        queryset=queryset,
-        offset=offset,
-        page=page,
-        fields=MESSAGE_FIELDS_TO_SERIALIZE
+        queryset=queryset, offset=offset, page=page, fields=MESSAGE_FIELDS_TO_SERIALIZE
     )
 
 
@@ -84,16 +81,14 @@ def get_chat_messages_list_consumer() -> None:
         request_id = data.value.get("request_id")
         try:
             validate_input_data(data.value)
-            response_data = get_chat_messages_list(
-                data=data.value
-            )
+            response_data = get_chat_messages_list(data=data.value)
             default_producer(
                 RESPONSE_TOPIC_NAME,
                 generate_response(
                     status=RESPONSE_STATUSES["SUCCESS"],
                     data=response_data,
                     message_type=MESSAGE_TYPE,
-                    request_id=request_id
+                    request_id=request_id,
                 ),
             )
         except COMPARED_CHAT_EXCEPTIONS as err:
@@ -103,6 +98,6 @@ def get_chat_messages_list_consumer() -> None:
                     status=RESPONSE_STATUSES["ERROR"],
                     data=str(err),
                     message_type=MESSAGE_TYPE,
-                    request_id=request_id
+                    request_id=request_id,
                 ),
             )

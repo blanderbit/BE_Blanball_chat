@@ -3,6 +3,12 @@ from typing import Any, Optional
 from django.conf import settings
 from kafka import KafkaConsumer
 
+from chat.exceptions import (
+    COMPARED_CHAT_EXCEPTIONS,
+    NotFoundException,
+    NotProvidedException,
+    PermissionsDeniedException,
+)
 from chat.models import Chat
 from chat.tasks.default_producer import (
     default_producer,
@@ -10,19 +16,13 @@ from chat.tasks.default_producer import (
 from chat.tasks.remove_user_from_chat import (
     remove_user_from_chat,
 )
-from chat.exceptions import (
-    NotProvidedException,
-    NotFoundException,
-    PermissionsDeniedException,
-    COMPARED_CHAT_EXCEPTIONS,
-)
 from chat.utils import (
     RESPONSE_STATUSES,
     check_is_all_users_deleted_personal_chat,
+    check_user_is_chat_admin,
     check_user_is_chat_member,
     find_user_in_chat_by_id,
     generate_response,
-    check_user_is_chat_admin,
     get_chat,
 )
 
@@ -58,7 +58,9 @@ def validate_input_data(data: chat_data) -> None:
 
     if chat_instance.is_group():
         if not check_user_is_chat_admin(chat=chat_instance, user_id=user_id):
-            raise PermissionsDeniedException(YOU_DONT_HAVE_PERMISSIONS_TO_DELETE_THIS_CHAT_ERROR)
+            raise PermissionsDeniedException(
+                YOU_DONT_HAVE_PERMISSIONS_TO_DELETE_THIS_CHAT_ERROR
+            )
     else:
         if not check_user_is_chat_member(chat=chat_instance, user_id=user_id):
             raise NotFoundException(object="chat")
@@ -81,10 +83,7 @@ def delete_chat(*, user_id: int, chat: Chat) -> None:
             chat.delete()
         else:
             remove_user_from_chat(user_id=user["user_id"], chat=chat)
-    return {
-        "chat_id": chat.id,
-        "users": chat.users
-    }
+    return {"chat_id": chat.id, "users": chat.users}
 
 
 def delete_chat_consumer() -> None:

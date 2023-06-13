@@ -3,14 +3,14 @@ from typing import Any, Optional
 from django.conf import settings
 from kafka import KafkaConsumer
 
+from chat.exceptions import (
+    COMPARED_CHAT_EXCEPTIONS,
+    InvalidDataException,
+    NotProvidedException,
+)
 from chat.models import Chat
 from chat.tasks.default_producer import (
     default_producer,
-)
-from chat.exceptions import (
-    NotProvidedException,
-    InvalidDataException,
-    COMPARED_CHAT_EXCEPTIONS,
 )
 from chat.utils import (
     RESPONSE_STATUSES,

@@ -3,19 +3,19 @@ from typing import Any, Optional
 from django.conf import settings
 from kafka import KafkaConsumer
 
+from chat.exceptions import (
+    COMPARED_CHAT_EXCEPTIONS,
+    NotProvidedException,
+    PermissionsDeniedException,
+)
 from chat.models import Chat
 from chat.tasks.default_producer import (
     default_producer,
 )
-from chat.exceptions import (
-    NotProvidedException,
-    PermissionsDeniedException,
-    COMPARED_CHAT_EXCEPTIONS,
-)
 from chat.utils import (
     RESPONSE_STATUSES,
-    check_user_is_chat_author,
     check_user_in_chat,
+    check_user_is_chat_author,
     find_user_in_chat_by_id,
     generate_response,
     get_chat,
@@ -83,11 +83,7 @@ def remove_user_from_chat(
     if len(chat_instance.users) == 0:
         chat.delete()
 
-    return {
-        "chat_id": chat.id,
-        "users": chat.users,
-        "removed_user": user_id
-    }
+    return {"chat_id": chat.id, "users": chat.users, "removed_user": user_id}
 
 
 def remove_user_from_chat_consumer() -> None:

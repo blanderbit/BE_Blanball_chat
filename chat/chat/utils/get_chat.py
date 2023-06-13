@@ -1,7 +1,7 @@
 from typing import Any, Optional
 
-from chat.models import Chat
 from chat.exceptions import NotFoundException
+from chat.models import Chat
 
 
 def get_chat(*, chat_id: Optional[int] = None, event_id: Optional[int] = None) -> Chat:

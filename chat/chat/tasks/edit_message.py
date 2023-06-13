@@ -3,26 +3,23 @@ from typing import Any, Optional
 from django.conf import settings
 from kafka import KafkaConsumer
 
-from chat.models import (
-    Messsage,
-    Chat
+from chat.exceptions import (
+    COMPARED_CHAT_EXCEPTIONS,
+    InvalidDataException,
+    NotFoundException,
+    NotProvidedException,
+    PermissionsDeniedException,
 )
+from chat.models import Chat, Messsage
 from chat.tasks.default_producer import (
     default_producer,
 )
-from chat.exceptions import (
-    NotProvidedException,
-    NotFoundException,
-    PermissionsDeniedException,
-    InvalidDataException,
-    COMPARED_CHAT_EXCEPTIONS
-)
 from chat.utils import (
     RESPONSE_STATUSES,
+    check_user_is_chat_member,
     generate_response,
     get_message,
     remove_unnecessary_data,
-    check_user_is_chat_member,
 )
 
 # the name of the main topic that we
@@ -34,7 +31,9 @@ RESPONSE_TOPIC_NAME: str = "edit_message_response"
 
 CANT_EDIT_MESSAGE_IN_DISABLED_CHAT_ERROR: str = "cant_edit_message_in_disabled_chat"
 TIME_TO_EDIT_THE_MESSAGE_EXPIRED_ERROR: str = "time_to_edit_the_message_expired"
-YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_MESSAGE_ERROR: str = "you_dont_have_permissions_to_edit_this_message"
+YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_MESSAGE_ERROR: str = (
+    "you_dont_have_permissions_to_edit_this_message"
+)
 
 
 EDIT_MESSAGE_FIELDS: list[str] = ["text", "id"]
@@ -63,7 +62,9 @@ def validate_input_data(data: message_data) -> None:
         raise NotFoundException(object="chat")
 
     if message_instance.sender_id != user_id:
-        raise PermissionsDeniedException(YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_MESSAGE_ERROR)
+        raise PermissionsDeniedException(
+            YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_MESSAGE_ERROR
+        )
 
     if chat_instance.disabled:
         raise PermissionsDeniedException(CANT_EDIT_MESSAGE_IN_DISABLED_CHAT_ERROR)
@@ -73,9 +74,7 @@ def validate_input_data(data: message_data) -> None:
 
 
 def prepare_data_before_edit_message(*, data: message_data) -> message_data:
-    prepared_data = remove_unnecessary_data(
-        data, *EDIT_MESSAGE_FIELDS
-    )
+    prepared_data = remove_unnecessary_data(data, *EDIT_MESSAGE_FIELDS)
 
     return prepared_data
 
@@ -91,7 +90,7 @@ def edit_message(*, message: Messsage, new_data: message_data) -> Optional[str]:
         return {
             "chat_id": chat_instance.id,
             "users": chat_instance.users,
-            "new_data": remove_unnecessary_data(message.__dict__)
+            "new_data": remove_unnecessary_data(message.__dict__),
         }
     except Exception as _err:
         print(_err)
@@ -118,7 +117,7 @@ def edit_message_consumer() -> None:
                     status=RESPONSE_STATUSES["SUCCESS"],
                     data=response_data,
                     message_type=MESSAGE_TYPE,
-                    request_id=request_id
+                    request_id=request_id,
                 ),
             )
         except COMPARED_CHAT_EXCEPTIONS as err:
@@ -128,6 +127,6 @@ def edit_message_consumer() -> None:
                     status=RESPONSE_STATUSES["ERROR"],
                     data=str(err),
                     message_type=MESSAGE_TYPE,
-                    request_id=request_id
+                    request_id=request_id,
                 ),
             )

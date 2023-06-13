@@ -3,15 +3,15 @@ from typing import Any, Optional
 from django.conf import settings
 from kafka import KafkaConsumer
 
+from chat.exceptions import (
+    COMPARED_CHAT_EXCEPTIONS,
+    InvalidDataException,
+    NotProvidedException,
+    PermissionsDeniedException,
+)
 from chat.models import Chat
 from chat.tasks.default_producer import (
     default_producer,
-)
-from chat.exceptions import (
-    NotProvidedException,
-    PermissionsDeniedException,
-    InvalidDataException,
-    COMPARED_CHAT_EXCEPTIONS,
 )
 from chat.utils import (
     RESPONSE_STATUSES,
@@ -57,22 +57,21 @@ def validate_input_data(data: chat_data) -> None:
         raise NotProvidedException(fields=["user_id"])
     elif user_id and chat_instance.is_group():
         if not check_user_is_chat_admin(chat=chat_instance, user_id=user_id):
-            raise PermissionsDeniedException(YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_CHAT_ERROR)
+            raise PermissionsDeniedException(
+                YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_CHAT_ERROR
+            )
 
 
 def edit_chat(*, chat: Chat, new_data: chat_data) -> Optional[str]:
-
     try:
-        prepared_data = remove_unnecessary_data(
-            new_data, *KEYS_IN_NEW_DATA_TO_KEEP
-        )
+        prepared_data = remove_unnecessary_data(new_data, *KEYS_IN_NEW_DATA_TO_KEEP)
         chat.__dict__.update(prepared_data)
         chat.save()
 
         return {
             "chat_id": chat.id,
             "users": chat.users,
-            "new_data": remove_unnecessary_data(chat.__dict__)
+            "new_data": remove_unnecessary_data(chat.__dict__),
         }
     except Exception as _err:
         print(_err)
@@ -97,7 +96,7 @@ def edit_chat_consumer() -> None:
                     status=RESPONSE_STATUSES["SUCCESS"],
                     data=response_data,
                     message_type=MESSAGE_TYPE,
-                    request_id=request_id
+                    request_id=request_id,
                 ),
             )
         except COMPARED_CHAT_EXCEPTIONS as err:
@@ -107,6 +106,6 @@ def edit_chat_consumer() -> None:
                     status=RESPONSE_STATUSES["ERROR"],
                     data=str(err),
                     message_type=MESSAGE_TYPE,
-                    request_id=request_id
+                    request_id=request_id,
                 ),
             )

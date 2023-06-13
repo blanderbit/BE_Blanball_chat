@@ -4,21 +4,19 @@ from django.conf import settings
 from django.db.models.query import QuerySet
 from kafka import KafkaConsumer
 
-from chat.models import (
-    Messsage
+from chat.exceptions import (
+    COMPARED_CHAT_EXCEPTIONS,
+    NotProvidedException,
 )
+from chat.models import Messsage
 from chat.tasks.default_producer import (
     default_producer,
 )
-from chat.exceptions import (
-    NotProvidedException,
-    COMPARED_CHAT_EXCEPTIONS,
-)
 from chat.utils import (
     RESPONSE_STATUSES,
+    check_user_is_chat_member,
     generate_response,
     get_message_without_error,
-    check_user_is_chat_member,
 )
 
 # the name of the main topic that we
@@ -90,7 +88,7 @@ def delete_messages_consumer() -> None:
                     status=RESPONSE_STATUSES["SUCCESS"],
                     data=response_data,
                     message_type=MESSAGE_TYPE,
-                    request_id=request_id
+                    request_id=request_id,
                 ),
             )
         except COMPARED_CHAT_EXCEPTIONS as err:
@@ -100,6 +98,6 @@ def delete_messages_consumer() -> None:
                     status=RESPONSE_STATUSES["ERROR"],
                     data=str(err),
                     message_type=MESSAGE_TYPE,
-                    request_id=request_id
+                    request_id=request_id,
                 ),
             )

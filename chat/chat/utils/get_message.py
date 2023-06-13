@@ -1,7 +1,8 @@
-
 from typing import Optional
-from chat.models import Messsage
+
 from chat.exceptions import NotFoundException
+from chat.models import Messsage
+
 
 def get_message(*, message_id: int) -> Messsage:
     try:

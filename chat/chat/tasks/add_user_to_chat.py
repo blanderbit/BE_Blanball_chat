@@ -3,19 +3,19 @@ from typing import Any, Optional
 from django.conf import settings
 from kafka import KafkaConsumer
 
+from chat.exceptions import (
+    COMPARED_CHAT_EXCEPTIONS,
+    NotProvidedException,
+    PermissionsDeniedException,
+)
 from chat.models import Chat
 from chat.tasks.default_producer import (
     default_producer,
 )
-from chat.exceptions import (
-    NotProvidedException,
-    PermissionsDeniedException,
-    COMPARED_CHAT_EXCEPTIONS,
-)
 from chat.utils import (
     RESPONSE_STATUSES,
-    generate_response,
     check_user_is_chat_member,
+    generate_response,
     get_chat,
 )
 
@@ -49,9 +49,11 @@ def validate_input_data(data: dict[str, int]) -> None:
     chat_instance = get_chat(chat_id=chat_id, event_id=event_id)
 
     if len(chat_instance.users) >= chat_instance.chat_users_count_limit:
-        raise PermissionsDeniedException(LIMIT_OF_USERS_REACHED_ERROR.format(
-            limit=chat_instance.chat_users_count_limit
-        ))
+        raise PermissionsDeniedException(
+            LIMIT_OF_USERS_REACHED_ERROR.format(
+                limit=chat_instance.chat_users_count_limit
+            )
+        )
     if chat_instance.type == Chat.Type.PERSONAL:
         raise PermissionsDeniedException(CANT_ADD_USER_TO_PERSONAL_CHAT_ERROR)
     elif check_user_is_chat_member(chat=chat_instance, user_id=user_id):
@@ -67,11 +69,7 @@ def add_user_to_chat(user_id: int, chat: Chat) -> str:
     )
     chat.save()
 
-    return {
-        "chat_id": chat.id,
-        "users": chat.users,
-        "new_user": user_id
-    }
+    return {"chat_id": chat.id, "users": chat.users, "new_user": user_id}
 
 
 def add_user_to_chat_consumer() -> None:
