@@ -11,9 +11,11 @@ from chat.tasks.default_producer import (
     default_producer,
 )
 from chat.errors import (
-    USER_ID_NOT_PROVIDED_ERROR,
     PROVIDED_INVALID_DATA_ERROR,
     CHAT_NOT_FOUND_ERROR,
+)
+from chat.exceptions import (
+    NotProvidedException
 )
 from chat.utils import (
     RESPONSE_STATUSES,
@@ -30,7 +32,6 @@ TOPIC_NAME: str = "edit_message"
 # the name of the topic to which we send the answer
 RESPONSE_TOPIC_NAME: str = "edit_message_response"
 
-MESSAGE_ID_NOT_PROVIDED_ERROR: str = "message_id_not_provided"
 CANT_EDIT_MESSAGE_IN_DISABLED_CHAT_ERROR: str = "cant_edit_message_in_disabled_chat"
 TIME_TO_EDIT_THE_MESSAGE_EXPIRED_ERROR: str = "time_to_edit_the_message_expired"
 YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_MESSAGE_ERROR: str = "you_dont_have_permissions_to_edit_this_message"
@@ -50,9 +51,9 @@ def validate_input_data(data: message_data) -> None:
     message_id: Optional[int] = data.get("message_id")
 
     if not user_id:
-        raise ValueError(USER_ID_NOT_PROVIDED_ERROR)
+        raise NotProvidedException(fields=["user_id"])
     if not message_id:
-        raise ValueError(MESSAGE_ID_NOT_PROVIDED_ERROR)
+        raise NotProvidedException(fields=["message_id"])
 
     global message_instance
     message_instance = get_message(message_id=message_id)

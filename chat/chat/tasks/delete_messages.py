@@ -10,8 +10,8 @@ from chat.models import (
 from chat.tasks.default_producer import (
     default_producer,
 )
-from chat.errors import (
-    USER_ID_NOT_PROVIDED_ERROR,
+from chat.exceptions import (
+    NotProvidedException
 )
 from chat.utils import (
     RESPONSE_STATUSES,
@@ -27,8 +27,6 @@ TOPIC_NAME: str = "delete_messages"
 # the name of the topic to which we send the answer
 RESPONSE_TOPIC_NAME: str = "delete_messages_response"
 
-MESSAGE_IDS_NOT_PROVIDED_ERROR: str = "message_ids_not_provided"
-
 MESSAGE_TYPE: str = "delete_messages"
 
 
@@ -42,9 +40,9 @@ def validate_input_data(data: message_data) -> None:
     message_ids: Optional[int] = data.get("message_ids")
 
     if not user_id:
-        raise ValueError(USER_ID_NOT_PROVIDED_ERROR)
+        raise NotProvidedException(fields=["user_id"])
     if not message_ids or len(message_ids) == 0:
-        raise ValueError(MESSAGE_IDS_NOT_PROVIDED_ERROR)
+        raise NotProvidedException(fields=["message_ids"])
 
     global message_instance
 

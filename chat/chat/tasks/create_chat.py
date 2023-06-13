@@ -10,6 +10,9 @@ from chat.tasks.default_producer import (
 from chat.errors import (
     PROVIDED_INVALID_DATA_ERROR,
 )
+from chat.exceptions import (
+    NotProvidedException
+)
 from chat.utils import (
     RESPONSE_STATUSES,
     generate_response,
@@ -21,10 +24,6 @@ TOPIC_NAME: str = "create_chat"
 
 # the name of the topic to which we send the answer
 RESPONSE_TOPIC_NAME: str = "create_chat_response"
-CHAT_NAME_NOT_PROVIDED_ERROR: str = "name_not_provided"
-CHAT_AUTOR_NOT_PROVIDED_ERROR: str = "author_not_provided"
-REQUEST_ID_NOT_PROVIDED_ERROR: str = "request_id_not_provided"
-EVENT_ID_NOT_PROVIDED: str = "event_id_not_provided"
 
 MESSAGE_TYPE: str = "create_chat"
 
@@ -37,9 +36,9 @@ def validate_input_data(data: chat_data) -> None:
     author: Optional[str] = data.get("author")
 
     if not name:
-        raise ValueError(CHAT_NAME_NOT_PROVIDED_ERROR)
+        raise NotProvidedException(fields=["name"])
     if not author:
-        raise ValueError(CHAT_AUTOR_NOT_PROVIDED_ERROR)
+        raise NotProvidedException(fields=["author"])
 
 
 def set_chat_type(data: chat_data) -> str:
@@ -55,7 +54,7 @@ def set_chat_type(data: chat_data) -> str:
         else:
             return Chat.Type.PERSONAL
     elif chat_type == Chat.Type.EVENT_GROUP and not event_id:
-        raise ValueError(EVENT_ID_NOT_PROVIDED)
+        raise NotProvidedException(fields=["event_id"])
     return chat_type
 
 

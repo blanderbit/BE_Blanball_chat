@@ -10,7 +10,9 @@ from chat.tasks.default_producer import (
 from chat.errors import (
     USER_ID_NOT_PROVIDED_ERROR,
     PROVIDED_INVALID_DATA_ERROR,
-    CHAT_ID_OR_EVENT_ID_NOT_PROVIDED_ERROR
+)
+from chat.exceptions import (
+    NotProvidedException
 )
 from chat.utils import (
     RESPONSE_STATUSES,
@@ -45,7 +47,7 @@ def validate_input_data(data: chat_data) -> None:
     user_id: Optional[int] = data.get("user_id")
 
     if not event_id and not chat_id:
-        raise ValueError(CHAT_ID_OR_EVENT_ID_NOT_PROVIDED_ERROR)
+        raise NotProvidedException(fields=["event_id", "chat_id"])
 
     global chat_instance
     chat_instance = get_chat(chat_id=chat_id, event_id=event_id)
@@ -53,7 +55,7 @@ def validate_input_data(data: chat_data) -> None:
     if chat_instance.disabled:
         raise ValueError(CANT_EDIT_DISABLED_CHAT_ERROR)
     if not user_id and chat_instance.is_group():
-        raise ValueError(USER_ID_NOT_PROVIDED_ERROR)
+        raise NotProvidedException(fields=["user_id"])
     elif user_id and chat_instance.is_group():
         if not check_user_is_chat_admin(chat=chat_instance, user_id=user_id):
             raise ValueError(YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_CHAT_ERROR)

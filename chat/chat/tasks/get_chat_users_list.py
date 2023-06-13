@@ -7,9 +7,10 @@ from chat.tasks.default_producer import (
     default_producer,
 )
 from chat.errors import (
-    USER_ID_NOT_PROVIDED_ERROR,
     CHAT_NOT_FOUND_ERROR,
-    CHAT_ID_NOT_PROVIDED_ERROR,
+)
+from chat.exceptions import (
+    NotProvidedException
 )
 from chat.utils import (
     RESPONSE_STATUSES,
@@ -34,9 +35,9 @@ def validate_input_data(data: dict[str, int]) -> None:
     chat_id: int = data.get("chat_id")
 
     if not user_id:
-        raise ValueError(USER_ID_NOT_PROVIDED_ERROR)
+        raise NotProvidedException(fields=["user_id"])
     if not chat_id:
-        raise ValueError(CHAT_ID_NOT_PROVIDED_ERROR)
+        raise NotProvidedException(fields=["chat_id"])
 
     global chat_instance
     chat_instance = get_chat(chat_id=chat_id)

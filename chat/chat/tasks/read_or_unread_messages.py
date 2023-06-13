@@ -10,8 +10,8 @@ from chat.models import (
 from chat.tasks.default_producer import (
     default_producer,
 )
-from chat.errors import (
-    USER_ID_NOT_PROVIDED_ERROR,
+from chat.exceptions import (
+    NotProvidedException
 )
 from chat.utils import (
     RESPONSE_STATUSES,
@@ -27,8 +27,6 @@ TOPIC_NAME: str = "read_or_unread_messages"
 # the name of the topic to which we send the answer
 RESPONSE_TOPIC_NAME: str = "read_or_unread_messages_response"
 
-MESSAGE_IDS_NOT_PROVIDED_ERROR: str = "message_ids_not_provided"
-ACTION_NOT_PROVIDED_ERROR: str = "action_not_provided"
 ACTION_INVALID_ERROR: str = "action_invalid"
 
 
@@ -51,14 +49,14 @@ def validate_input_data(data: message_data) -> None:
     action: str = data.get("action")
 
     if not action:
-        raise ValueError(ACTION_NOT_PROVIDED_ERROR)
+        raise NotProvidedException(fields=["action"])
     if action not in ACTION_OPTIONS:
         raise ValueError(ACTION_INVALID_ERROR)
 
     if not user_id:
-        raise ValueError(USER_ID_NOT_PROVIDED_ERROR)
+        raise NotProvidedException(fields=["user_id"])
     if not message_ids or len(message_ids) == 0:
-        raise ValueError(MESSAGE_IDS_NOT_PROVIDED_ERROR)
+        raise NotProvidedException(fields=["message_ids"])
 
     global message_instance
 

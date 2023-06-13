@@ -7,10 +7,11 @@ from chat.tasks.default_producer import (
     default_producer,
 )
 from chat.errors import (
-    CHAT_ID_NOT_PROVIDED_ERROR,
-    USER_ID_NOT_PROVIDED_ERROR,
     CHAT_NOT_FOUND_ERROR,
     PROVIDED_INVALID_DATA_ERROR,
+)
+from chat.exceptions import (
+    NotProvidedException
 )
 from chat.utils import (
     RESPONSE_STATUSES,
@@ -27,7 +28,6 @@ TOPIC_NAME: str = "create_message"
 # the name of the topic to which we send the answer
 RESPONSE_TOPIC_NAME: str = "create_message_response"
 
-MESSAGE_NOT_PROVIDED_ERROR: str = "message_not_provided"
 CANT_SEND_MESSAGE_IN_DISABLED_CHAT_ERROR: str = "cant_send_message_in_disabled_chat"
 
 CREATE_MESSAGE_FIELDS: list[str] = ["sender_id", "text", "chat"]
@@ -44,11 +44,11 @@ def validate_input_data(data: message_data) -> None:
     message_text: Optional[str] = data.get("text")
 
     if not chat_id:
-        raise ValueError(CHAT_ID_NOT_PROVIDED_ERROR)
+        raise NotProvidedException(fields=["chat_id"])
     if not user_id:
-        raise ValueError(USER_ID_NOT_PROVIDED_ERROR)
+        raise NotProvidedException(fields=["user_id"])
     if not message_text:
-        raise ValueError(MESSAGE_NOT_PROVIDED_ERROR)
+        raise NotProvidedException(fields=["message_text"])
 
     global chat_instance
     chat_instance = get_chat(chat_id=chat_id)

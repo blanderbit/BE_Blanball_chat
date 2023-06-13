@@ -11,9 +11,10 @@ from chat.tasks.remove_user_from_chat import (
     remove_user_from_chat,
 )
 from chat.errors import (
-    USER_ID_NOT_PROVIDED_ERROR,
     CHAT_NOT_FOUND_ERROR,
-    CHAT_ID_OR_EVENT_ID_NOT_PROVIDED_ERROR,
+)
+from chat.exceptions import (
+    NotProvidedException
 )
 from chat.utils import (
     RESPONSE_STATUSES,
@@ -48,9 +49,9 @@ def validate_input_data(data: chat_data) -> None:
     event_id: Optional[int] = data.get("event_id")
 
     if not event_id and not chat_id:
-        raise ValueError(CHAT_ID_OR_EVENT_ID_NOT_PROVIDED_ERROR)
+        raise NotProvidedException(fields=["event_id", "chat_id"])
     if not user_id:
-        raise ValueError(USER_ID_NOT_PROVIDED_ERROR)
+        raise NotProvidedException(fields=["user_id"])
 
     global chat_instance
     chat_instance = get_chat(chat_id=chat_id, event_id=event_id)
