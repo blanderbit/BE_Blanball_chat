@@ -76,6 +76,8 @@ def delete_messages_consumer() -> None:
     )
 
     for data in consumer:
+        request_id = data.value.get("request_id")
+
         try:
             validate_input_data(data.value)
             response_data = delete_messages(
@@ -87,6 +89,7 @@ def delete_messages_consumer() -> None:
                     status=RESPONSE_STATUSES["SUCCESS"],
                     data=response_data,
                     message_type=MESSAGE_TYPE,
+                    request_id=request_id
                 ),
             )
         except ValueError as err:
@@ -96,5 +99,6 @@ def delete_messages_consumer() -> None:
                     status=RESPONSE_STATUSES["ERROR"],
                     data=str(err),
                     message_type=MESSAGE_TYPE,
+                    request_id=request_id
                 ),
             )

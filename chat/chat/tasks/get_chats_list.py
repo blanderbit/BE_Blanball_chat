@@ -30,7 +30,6 @@ CHAT_FIELDS_TO_SERIALIZE: list[str] = [
     "image",
     "disabled",
     "last_message",
-    "users"
 ]
 
 

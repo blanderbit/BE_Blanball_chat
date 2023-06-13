@@ -1,66 +1,71 @@
-from typing import Any, Optional
+from typing import Any
 
 from django.conf import settings
 from kafka import KafkaConsumer
 
-from chat.models import Chat
 from chat.tasks.default_producer import (
     default_producer,
 )
 from chat.utils import (
     RESPONSE_STATUSES,
     generate_response,
+    custom_json_field_pagination,
+    check_user_in_chat,
     get_chat,
 )
 
 # the name of the main topic that we
 # are listening to receive data from outside
-TOPIC_NAME: str = "disable_chat"
+TOPIC_NAME: str = "get_chat_users_list"
 
 # the name of the topic to which we send the answer
-RESPONSE_TOPIC_NAME: str = "disable_chat_response"
-CHAT_ID_OR_EVENT_ID_NOT_PROVIDED_ERROR: str = "chat_id_or_event_id_not_provided"
-CHAT_DISABLED_SUCCESS: str = "chat_disabled"
+RESPONSE_TOPIC_NAME: str = "get_chat_users_list_response"
+USER_ID_NOT_PROVIDED: str = "user_id_not_provided"
+CHAT_ID_NOT_PROVIDED: str = "chat_id_not_provided"
+CHAT_NOT_FOUND_ERROR: str = "chat_not_found"
 
-MESSAGE_TYPE: str = "disable_chat"
-
-
-chat_data = dict[str, Any]
+MESSAGE_TYPE: str = "get_chat_users_list"
 
 
-def validate_input_data(data: chat_data) -> None:
-    chat_id: Optional[int] = data.get("chat_id")
-    event_id: Optional[int] = data.get("event_id")
+def validate_input_data(data: dict[str, int]) -> None:
+    user_id: int = data.get("user_id")
+    chat_id: int = data.get("chat_id")
 
-    if not event_id and not chat_id:
-        raise ValueError(CHAT_ID_OR_EVENT_ID_NOT_PROVIDED_ERROR)
+    if not user_id:
+        raise ValueError(USER_ID_NOT_PROVIDED)
+    if not chat_id:
+        raise ValueError(CHAT_ID_NOT_PROVIDED)
 
     global chat_instance
     chat_instance = get_chat(chat_id=chat_id)
 
-
-def disable_chat(*, chat: Chat) -> None:
-    chat.disabled = True
-    chat.save()
-
-    return {
-        "chat_id": chat.id,
-        "users": chat.users
-    }
+    if not check_user_in_chat(chat=chat_instance, user_id=user_id):
+        raise ValueError(CHAT_NOT_FOUND_ERROR)
 
 
-def disable_chat_consumer() -> None:
+def get_chat_users_list(*, data: dict[str, int]) -> None:
+    offset: int = data.get("offset", 10)
+    page: int = data.get("page", 1)
+
+    return custom_json_field_pagination(
+        model_instance=chat_instance,
+        page=page,
+        offset=offset,
+        field_name="users",
+    )
+
+
+def get_chat_users_list_consumer() -> None:
     consumer: KafkaConsumer = KafkaConsumer(
         TOPIC_NAME, **settings.KAFKA_CONSUMER_CONFIG
     )
 
     for data in consumer:
         request_id = data.value.get("request_id")
-
         try:
             validate_input_data(data.value)
-            response_data = disable_chat(
-                user_id=data.value.get("user_id"), chat=chat_instance
+            response_data = get_chat_users_list(
+                data=data.value
             )
             default_producer(
                 RESPONSE_TOPIC_NAME,

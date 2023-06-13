@@ -172,13 +172,12 @@ class Chat(models.Model):
         ).order_by('-messages__time_created', "-time_created", '-message_count', "-id")
 
     @property
-    def last_message(self) -> str:
+    def last_message(self) -> Optional[str]:
 
         message = Messsage.objects.filter(chat__id=self.id).last()
 
         if message:
             return message.text
-        return None
 
     class Meta:
         # the name of the table in the database for this model

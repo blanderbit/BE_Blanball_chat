@@ -102,6 +102,8 @@ def edit_message_consumer() -> None:
     )
 
     for data in consumer:
+        request_id = data.value.get("request_id")
+
         try:
             validate_input_data(data.value)
             response_data = edit_message(
@@ -114,6 +116,7 @@ def edit_message_consumer() -> None:
                     status=RESPONSE_STATUSES["SUCCESS"],
                     data=response_data,
                     message_type=MESSAGE_TYPE,
+                    request_id=request_id
                 ),
             )
         except ValueError as err:
@@ -123,5 +126,6 @@ def edit_message_consumer() -> None:
                     status=RESPONSE_STATUSES["ERROR"],
                     data=str(err),
                     message_type=MESSAGE_TYPE,
+                    request_id=request_id
                 ),
             )

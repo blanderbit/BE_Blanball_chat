@@ -33,10 +33,8 @@ LIMIT_OF_USERS_REACHED_ERROR: str = "limit_of_users_{limit}_reached"
 
 USER_ADDED_TO_CHAT_SUCCESS: dict[str, str] = "user_added_to_chat"
 
-add_user_to_chat_data = dict[str, int]
 
-
-def validate_input_data(data: add_user_to_chat_data) -> None:
+def validate_input_data(data: dict[str, int]) -> None:
     user_id: Optional[int] = data.get("user_id")
     event_id: Optional[int] = data.get("event_id")
     chat_id: Optional[int] = data.get("chat_id")
@@ -59,7 +57,7 @@ def validate_input_data(data: add_user_to_chat_data) -> None:
         raise ValueError(CANT_ADD_USER_WHO_IS_ALREADY_IN_THE_CHAT_ERROR)
 
 
-def add_user_to_chat(*, user_id: int, chat: Chat) -> str:
+def add_user_to_chat(user_id: int, chat: Chat) -> str:
     chat.users.append(
         Chat.create_user_data_before_add_to_chat(
             is_author=False,
@@ -82,7 +80,6 @@ def add_user_to_chat_consumer() -> None:
 
     for data in consumer:
         request_id = data.value.get("request_id")
-
         try:
             validate_input_data(data.value)
             response_data = add_user_to_chat(

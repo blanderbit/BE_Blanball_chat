@@ -90,6 +90,8 @@ def read_or_unread_messages_consumer() -> None:
     )
 
     for data in consumer:
+        request_id = data.value.get("request_id")
+
         try:
             validate_input_data(data.value)
             response_data = read_or_unread_messages(

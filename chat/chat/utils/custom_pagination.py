@@ -3,12 +3,12 @@ from django.core.paginator import Paginator, InvalidPage
 from django.db.models.query import QuerySet
 
 
-def custom_pagination(*, 
-        queryset: QuerySet,
-        page: int = 1, 
-        offset: int = 10, 
-        fields: Optional[list[str]] = None
-    ) -> dict:
+def custom_pagination(*,
+                      queryset: QuerySet,
+                      page: int = 1,
+                      offset: int = 10,
+                      fields: Optional[list[str]] = None
+                      ) -> dict:
     paginator = Paginator(queryset, offset)
 
     try:
@@ -19,6 +19,28 @@ def custom_pagination(*,
             "current_page": page,
             "total_count": paginator.count,
             "results": serialized_data,
+        }
+
+    except InvalidPage:
+        raise ValueError("invalid_page")
+
+
+def custom_json_field_pagination(*,
+                                 model_instance,
+                                 field_name: str,
+                                 page: int = 1,
+                                 offset: int = 10
+                                 ) -> dict:
+    queryset = getattr(model_instance, field_name)
+    paginator = Paginator(queryset, offset)
+
+    try:
+        page_objects = paginator.page(page)
+
+        return {
+            "current_page": page,
+            "total_count": paginator.count,
+            "results": page_objects.object_list,
         }
 
     except InvalidPage:

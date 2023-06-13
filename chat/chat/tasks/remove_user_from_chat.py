@@ -10,7 +10,7 @@ from chat.tasks.default_producer import (
 from chat.utils import (
     RESPONSE_STATUSES,
     check_user_is_chat_author,
-    check_user_is_chat_member,
+    check_user_in_chat,
     find_user_in_chat_by_id,
     generate_response,
     get_chat,
@@ -62,7 +62,7 @@ def validate_input_data(data: chat_data) -> None:
                 YOU_DONT_HAVE_PERMISSIONS_TO_REMOVE_USER_FROM_THIS_CHAT_ERROR
             )
 
-    if not check_user_is_chat_member(chat=chat_instance, user_id=user_id):
+    if not check_user_in_chat(chat=chat_instance, user_id=user_id):
         raise ValueError(CANT_REMOVE_USER_WHO_NOT_IN_THE_CHAT)
 
 

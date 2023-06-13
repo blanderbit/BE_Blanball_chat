@@ -16,6 +16,7 @@ from chat.utils import (
     custom_pagination,
     get_chat,
     check_user_is_chat_member,
+    check_user_in_chat,
 )
 
 # the name of the main topic that we
@@ -55,7 +56,7 @@ def validate_input_data(data: chat_data) -> None:
     global chat_instance
     chat_instance = get_chat(chat_id=chat_id)
 
-    if not check_user_is_chat_member(chat=chat_instance, user_id=user_id):
+    if not check_user_in_chat(chat=chat_instance, user_id=user_id):
         raise ValueError(CHAT_NOT_FOUND_ERROR)
 
 
