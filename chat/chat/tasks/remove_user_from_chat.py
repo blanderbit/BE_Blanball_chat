@@ -8,7 +8,8 @@ from chat.tasks.default_producer import (
     default_producer,
 )
 from chat.exceptions import (
-    NotProvidedException
+    NotProvidedException,
+    PermissionsDeniedException,
 )
 from chat.utils import (
     RESPONSE_STATUSES,
@@ -54,15 +55,15 @@ def validate_input_data(data: chat_data) -> None:
 
     if sender_user_id:
         if chat_instance.type == Chat.Type.PERSONAL:
-            raise ValueError(CANT_REMOVE_USER_FROM_PERSONAL_CHAT)
+            raise PermissionsDeniedException(CANT_REMOVE_USER_FROM_PERSONAL_CHAT)
 
         if not check_user_is_chat_author(chat=chat_instance, user_id=sender_user_id):
-            raise ValueError(
+            raise PermissionsDeniedException(
                 YOU_DONT_HAVE_PERMISSIONS_TO_REMOVE_USER_FROM_THIS_CHAT_ERROR
             )
 
     if not check_user_in_chat(chat=chat_instance, user_id=user_id):
-        raise ValueError(CANT_REMOVE_USER_WHO_NOT_IN_THE_CHAT)
+        raise PermissionsDeniedException(CANT_REMOVE_USER_WHO_NOT_IN_THE_CHAT)
 
 
 def remove_user_from_chat(

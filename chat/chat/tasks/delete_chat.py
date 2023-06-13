@@ -12,7 +12,8 @@ from chat.tasks.remove_user_from_chat import (
 )
 from chat.exceptions import (
     NotProvidedException,
-    NotFoundException
+    NotFoundException,
+    PermissionsDeniedException,
 )
 from chat.utils import (
     RESPONSE_STATUSES,
@@ -56,7 +57,7 @@ def validate_input_data(data: chat_data) -> None:
 
     if chat_instance.is_group():
         if not check_user_is_chat_admin(chat=chat_instance, user_id=user_id):
-            raise ValueError(YOU_DONT_HAVE_PERMISSIONS_TO_DELETE_THIS_CHAT_ERROR)
+            raise PermissionsDeniedException(YOU_DONT_HAVE_PERMISSIONS_TO_DELETE_THIS_CHAT_ERROR)
     else:
         if not check_user_is_chat_member(chat=chat_instance, user_id=user_id):
             raise NotFoundException(object="chat")

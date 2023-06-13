@@ -11,7 +11,8 @@ from chat.errors import (
 )
 from chat.exceptions import (
     NotProvidedException,
-    NotFoundException
+    NotFoundException,
+    PermissionsDeniedException,
 )
 from chat.utils import (
     RESPONSE_STATUSES,
@@ -57,7 +58,7 @@ def validate_input_data(data: message_data) -> None:
         raise NotFoundException(object="chat")
 
     if chat_instance.disabled:
-        raise ValueError(CANT_SEND_MESSAGE_IN_DISABLED_CHAT_ERROR)
+        raise PermissionsDeniedException(CANT_SEND_MESSAGE_IN_DISABLED_CHAT_ERROR)
 
 
 def prepare_data_before_create_message(*, data: message_data) -> message_data:

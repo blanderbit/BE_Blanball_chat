@@ -15,7 +15,8 @@ from chat.errors import (
 )
 from chat.exceptions import (
     NotProvidedException,
-    NotFoundException
+    NotFoundException,
+    PermissionsDeniedException,
 )
 from chat.utils import (
     RESPONSE_STATUSES,
@@ -63,13 +64,13 @@ def validate_input_data(data: message_data) -> None:
         raise NotFoundException(object="chat")
 
     if message_instance.sender_id != user_id:
-        raise ValueError(YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_MESSAGE_ERROR)
+        raise PermissionsDeniedException(YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_MESSAGE_ERROR)
 
     if chat_instance.disabled:
-        raise ValueError(CANT_EDIT_MESSAGE_IN_DISABLED_CHAT_ERROR)
+        raise PermissionsDeniedException(CANT_EDIT_MESSAGE_IN_DISABLED_CHAT_ERROR)
 
     if message_instance.is_expired_to_edit():
-        raise ValueError(TIME_TO_EDIT_THE_MESSAGE_EXPIRED_ERROR)
+        raise PermissionsDeniedException(TIME_TO_EDIT_THE_MESSAGE_EXPIRED_ERROR)
 
 
 def prepare_data_before_edit_message(*, data: message_data) -> message_data:

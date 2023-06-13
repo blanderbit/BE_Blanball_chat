@@ -8,7 +8,8 @@ from chat.tasks.default_producer import (
     default_producer,
 )
 from chat.exceptions import (
-    NotProvidedException
+    NotProvidedException,
+    PermissionsDeniedException,
 )
 from chat.utils import (
     RESPONSE_STATUSES,
@@ -47,13 +48,13 @@ def validate_input_data(data: dict[str, int]) -> None:
     chat_instance = get_chat(chat_id=chat_id, event_id=event_id)
 
     if len(chat_instance.users) >= chat_instance.chat_users_count_limit:
-        raise ValueError(LIMIT_OF_USERS_REACHED_ERROR.format(
+        raise PermissionsDeniedException(LIMIT_OF_USERS_REACHED_ERROR.format(
             limit=chat_instance.chat_users_count_limit
         ))
     if chat_instance.type == Chat.Type.PERSONAL:
-        raise ValueError(CANT_ADD_USER_TO_PERSONAL_CHAT_ERROR)
+        raise PermissionsDeniedException(CANT_ADD_USER_TO_PERSONAL_CHAT_ERROR)
     elif check_user_is_chat_member(chat=chat_instance, user_id=user_id):
-        raise ValueError(CANT_ADD_USER_WHO_IS_ALREADY_IN_THE_CHAT_ERROR)
+        raise PermissionsDeniedException(CANT_ADD_USER_WHO_IS_ALREADY_IN_THE_CHAT_ERROR)
 
 
 def add_user_to_chat(user_id: int, chat: Chat) -> str:

@@ -11,7 +11,8 @@ from chat.errors import (
     PROVIDED_INVALID_DATA_ERROR,
 )
 from chat.exceptions import (
-    NotProvidedException
+    NotProvidedException,
+    PermissionsDeniedException,
 )
 from chat.utils import (
     RESPONSE_STATUSES,
@@ -52,12 +53,12 @@ def validate_input_data(data: chat_data) -> None:
     chat_instance = get_chat(chat_id=chat_id, event_id=event_id)
 
     if chat_instance.disabled:
-        raise ValueError(CANT_EDIT_DISABLED_CHAT_ERROR)
+        raise PermissionsDeniedException(CANT_EDIT_DISABLED_CHAT_ERROR)
     if not user_id and chat_instance.is_group():
         raise NotProvidedException(fields=["user_id"])
     elif user_id and chat_instance.is_group():
         if not check_user_is_chat_admin(chat=chat_instance, user_id=user_id):
-            raise ValueError(YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_CHAT_ERROR)
+            raise PermissionsDeniedException(YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_CHAT_ERROR)
 
 
 def edit_chat(*, chat: Chat, new_data: chat_data) -> Optional[str]:
