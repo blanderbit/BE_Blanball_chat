@@ -10,6 +10,11 @@ from chat.models import (
 from chat.tasks.default_producer import (
     default_producer,
 )
+from chat.errors import (
+    USER_ID_NOT_PROVIDED_ERROR,
+    PROVIDED_INVALID_DATA_ERROR,
+    CHAT_NOT_FOUND_ERROR,
+)
 from chat.utils import (
     RESPONSE_STATUSES,
     generate_response,
@@ -25,15 +30,10 @@ TOPIC_NAME: str = "edit_message"
 # the name of the topic to which we send the answer
 RESPONSE_TOPIC_NAME: str = "edit_message_response"
 
-USER_ID_NOT_PROVIDED_ERROR: str = "user_id_not_provided"
 MESSAGE_ID_NOT_PROVIDED_ERROR: str = "message_id_not_provided"
-MESSAGE_NOT_PROVIDED_ERROR: str = "message_not_provided"
 CANT_EDIT_MESSAGE_IN_DISABLED_CHAT_ERROR: str = "cant_edit_message_in_disabled_chat"
-PROVIDED_DATA_INVALID_TO_EDIT_THE_MESSAGE_ERROR: str = "provided_data_invalid_to_edit_the_message"
 TIME_TO_EDIT_THE_MESSAGE_EXPIRED_ERROR: str = "time_to_edit_the_message_expired"
 YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_MESSAGE_ERROR: str = "you_dont_have_permissions_to_edit_this_message"
-CHAT_NOT_FOUND_ERROR: str = "chat_not_found"
-MESSAGE_EDITED_SUCCESS: str = "message_edited"
 
 
 EDIT_MESSAGE_FIELDS: list[str] = ["text", "id"]
@@ -93,7 +93,7 @@ def edit_message(*, message: Messsage, new_data: message_data) -> Optional[str]:
             "new_data": remove_unnecessary_data(message.__dict__)
         }
     except Exception:
-        raise ValueError(PROVIDED_DATA_INVALID_TO_EDIT_THE_MESSAGE_ERROR)
+        raise ValueError(PROVIDED_INVALID_DATA_ERROR)
 
 
 def edit_message_consumer() -> None:

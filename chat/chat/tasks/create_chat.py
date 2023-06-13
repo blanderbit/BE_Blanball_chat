@@ -7,6 +7,9 @@ from chat.models import Chat
 from chat.tasks.default_producer import (
     default_producer,
 )
+from chat.errors import (
+    PROVIDED_INVALID_DATA_ERROR,
+)
 from chat.utils import (
     RESPONSE_STATUSES,
     generate_response,
@@ -22,7 +25,6 @@ CHAT_NAME_NOT_PROVIDED_ERROR: str = "name_not_provided"
 CHAT_AUTOR_NOT_PROVIDED_ERROR: str = "author_not_provided"
 REQUEST_ID_NOT_PROVIDED_ERROR: str = "request_id_not_provided"
 EVENT_ID_NOT_PROVIDED: str = "event_id_not_provided"
-PROVIDED_DATA_INVALID_TO_CREATE_THE_CHAT_ERROR: str = "provided_data_invalid_to_create_the_chat"
 
 MESSAGE_TYPE: str = "create_chat"
 
@@ -88,7 +90,7 @@ def create_chat(data: chat_data) -> Optional[chat_data]:
             "chat_data": chat_data,
         }
     except Exception:
-        raise ValueError(PROVIDED_DATA_INVALID_TO_CREATE_THE_CHAT_ERROR)
+        raise ValueError(PROVIDED_INVALID_DATA_ERROR)
 
 
 def create_chat_consumer() -> None:

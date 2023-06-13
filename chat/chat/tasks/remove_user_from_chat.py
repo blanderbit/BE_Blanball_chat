@@ -7,6 +7,10 @@ from chat.models import Chat
 from chat.tasks.default_producer import (
     default_producer,
 )
+from chat.errors import (
+    USER_ID_NOT_PROVIDED_ERROR,
+    CHAT_ID_OR_EVENT_ID_NOT_PROVIDED_ERROR,
+)
 from chat.utils import (
     RESPONSE_STATUSES,
     check_user_is_chat_author,
@@ -25,11 +29,7 @@ RESPONSE_TOPIC_NAME: str = "remove_user_from_chat_response"
 
 MESSAGE_TYPE: str = "remove_user_from_chat"
 
-USER_ID_NOT_PROVIDED_ERROR: str = "user_id_not_provided"
-CHAT_ID_OR_EVENT_ID_NOT_PROVIDED_ERROR: str = "chat_id_or_event_id_not_provided"
-CHAT_NOT_FOUND_ERROR: str = "chat_not_found"
 CANT_REMOVE_USER_WHO_NOT_IN_THE_CHAT: str = "cant_remove_user_who_not_in_the_chat"
-USER_REMOVED_FROM_THE_CHAT_SUCCESS: str = "user_removed_from_the_chat"
 YOU_DONT_HAVE_PERMISSIONS_TO_REMOVE_USER_FROM_THIS_CHAT_ERROR: str = (
     "you_dont_have_permissions_to_remove_user_from_this_chat"
 )

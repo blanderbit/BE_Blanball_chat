@@ -10,6 +10,11 @@ from chat.tasks.default_producer import (
 from chat.tasks.remove_user_from_chat import (
     remove_user_from_chat,
 )
+from chat.errors import (
+    USER_ID_NOT_PROVIDED_ERROR,
+    CHAT_NOT_FOUND_ERROR,
+    CHAT_ID_OR_EVENT_ID_NOT_PROVIDED_ERROR,
+)
 from chat.utils import (
     RESPONSE_STATUSES,
     check_is_all_users_deleted_personal_chat,
@@ -30,14 +35,9 @@ RESPONSE_TOPIC_NAME: str = "delete_chat_response"
 MESSAGE_TYPE: str = "delete_chat"
 
 
-CHAT_ID_OR_EVENT_ID_NOT_PROVIDED_ERROR: str = "chat_id_or_event_id_not_provided"
-USER_ID_NOT_PROVIDED: str = "user_id_not_provided"
 YOU_DONT_HAVE_PERMISSIONS_TO_DELETE_THIS_CHAT_ERROR: str = (
     "you_dont_have_permissions_to_delete_this_chat"
 )
-CHAT_DELETED_SUCCESS: str = "chat_deleted"
-CHAT_NOT_FOUND_ERROR: str = "chat_not_found"
-
 
 chat_data = dict[str, Any]
 
@@ -50,7 +50,7 @@ def validate_input_data(data: chat_data) -> None:
     if not event_id and not chat_id:
         raise ValueError(CHAT_ID_OR_EVENT_ID_NOT_PROVIDED_ERROR)
     if not user_id:
-        raise ValueError(USER_ID_NOT_PROVIDED)
+        raise ValueError(USER_ID_NOT_PROVIDED_ERROR)
 
     global chat_instance
     chat_instance = get_chat(chat_id=chat_id, event_id=event_id)

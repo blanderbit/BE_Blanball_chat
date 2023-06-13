@@ -7,6 +7,9 @@ from chat.models import Chat
 from chat.tasks.default_producer import (
     default_producer,
 )
+from chat.errors import (
+    CHAT_ID_OR_EVENT_ID_NOT_PROVIDED_ERROR
+)
 from chat.utils import (
     RESPONSE_STATUSES,
     generate_response,
@@ -19,8 +22,6 @@ TOPIC_NAME: str = "disable_chat"
 
 # the name of the topic to which we send the answer
 RESPONSE_TOPIC_NAME: str = "disable_chat_response"
-CHAT_ID_OR_EVENT_ID_NOT_PROVIDED_ERROR: str = "chat_id_or_event_id_not_provided"
-CHAT_DISABLED_SUCCESS: str = "chat_disabled"
 
 MESSAGE_TYPE: str = "disable_chat"
 

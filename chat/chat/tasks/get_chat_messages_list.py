@@ -3,9 +3,10 @@ from typing import Any, Optional
 from django.conf import settings
 from kafka import KafkaConsumer
 
-from chat.models import (
-    Chat,
-    Messsage
+from chat.errors import (
+    USER_ID_NOT_PROVIDED_ERROR,
+    CHAT_NOT_FOUND_ERROR,
+    CHAT_ID_NOT_PROVIDED_ERROR,
 )
 from chat.tasks.default_producer import (
     default_producer,
@@ -15,7 +16,6 @@ from chat.utils import (
     generate_response,
     custom_pagination,
     get_chat,
-    check_user_is_chat_member,
     check_user_in_chat,
 )
 
@@ -25,9 +25,6 @@ TOPIC_NAME: str = "get_chat_messages_list"
 
 # the name of the topic to which we send the answer
 RESPONSE_TOPIC_NAME: str = "get_chat_messages_list_response"
-USER_ID_NOT_PROVIDED_ERROR: str = "user_id_not_provided"
-CHAT_ID_NOT_PROVIDED_ERROR: str = "chat_id_not_provided"
-CHAT_NOT_FOUND_ERROR: str = "chat_not_found"
 
 MESSAGE_TYPE: str = "get_chat_messages_list"
 

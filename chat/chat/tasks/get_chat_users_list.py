@@ -6,6 +6,11 @@ from kafka import KafkaConsumer
 from chat.tasks.default_producer import (
     default_producer,
 )
+from chat.errors import (
+    USER_ID_NOT_PROVIDED_ERROR,
+    CHAT_NOT_FOUND_ERROR,
+    CHAT_ID_NOT_PROVIDED_ERROR,
+)
 from chat.utils import (
     RESPONSE_STATUSES,
     generate_response,
@@ -20,9 +25,6 @@ TOPIC_NAME: str = "get_chat_users_list"
 
 # the name of the topic to which we send the answer
 RESPONSE_TOPIC_NAME: str = "get_chat_users_list_response"
-USER_ID_NOT_PROVIDED: str = "user_id_not_provided"
-CHAT_ID_NOT_PROVIDED: str = "chat_id_not_provided"
-CHAT_NOT_FOUND_ERROR: str = "chat_not_found"
 
 MESSAGE_TYPE: str = "get_chat_users_list"
 
@@ -32,9 +34,9 @@ def validate_input_data(data: dict[str, int]) -> None:
     chat_id: int = data.get("chat_id")
 
     if not user_id:
-        raise ValueError(USER_ID_NOT_PROVIDED)
+        raise ValueError(USER_ID_NOT_PROVIDED_ERROR)
     if not chat_id:
-        raise ValueError(CHAT_ID_NOT_PROVIDED)
+        raise ValueError(CHAT_ID_NOT_PROVIDED_ERROR)
 
     global chat_instance
     chat_instance = get_chat(chat_id=chat_id)

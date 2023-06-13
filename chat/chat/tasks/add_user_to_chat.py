@@ -7,6 +7,10 @@ from chat.models import Chat
 from chat.tasks.default_producer import (
     default_producer,
 )
+from chat.errors import (
+    USER_ID_NOT_PROVIDED_ERROR,
+    CHAT_ID_OR_EVENT_ID_NOT_PROVIDED_ERROR
+)
 from chat.utils import (
     RESPONSE_STATUSES,
     generate_response,
@@ -23,15 +27,11 @@ RESPONSE_TOPIC_NAME: str = "add_user_to_chat_response"
 
 MESSAGE_TYPE: str = "add_user_to_chat"
 
-USER_ID_NOT_PROVIDED_ERROR: str = "user_id_not_provided"
-CHAT_ID_OR_EVENT_ID_NOT_PROVIDED_ERROR: str = "chat_id_or_event_id_not_provided"
 CANT_ADD_USER_TO_PERSONAL_CHAT_ERROR: str = "cant_add_user_to_personal_chat"
 CANT_ADD_USER_WHO_IS_ALREADY_IN_THE_CHAT_ERROR: str = (
     "cant_add_user_who_is_already_in_the_chat"
 )
 LIMIT_OF_USERS_REACHED_ERROR: str = "limit_of_users_{limit}_reached"
-
-USER_ADDED_TO_CHAT_SUCCESS: dict[str, str] = "user_added_to_chat"
 
 
 def validate_input_data(data: dict[str, int]) -> None:

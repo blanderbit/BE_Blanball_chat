@@ -7,6 +7,11 @@ from chat.models import Chat
 from chat.tasks.default_producer import (
     default_producer,
 )
+from chat.errors import (
+    USER_ID_NOT_PROVIDED_ERROR,
+    PROVIDED_INVALID_DATA_ERROR,
+    CHAT_ID_OR_EVENT_ID_NOT_PROVIDED_ERROR
+)
 from chat.utils import (
     RESPONSE_STATUSES,
     check_user_is_chat_admin,
@@ -21,15 +26,10 @@ TOPIC_NAME: str = "edit_chat"
 
 # the name of the topic to which we send the answer
 RESPONSE_TOPIC_NAME: str = "edit_chat_response"
-CHAT_ID_OR_EVENT_ID_NOT_PROVIDED_ERROR: str = "chat_id_or_event_id_not_provided"
-CHAT_EDITED_SUCCESS: str = "chat_edited"
-USER_ID_NOT_PROVIDED: str = "user_id_not_provided"
 CANT_EDIT_DISABLED_CHAT_ERROR: str = "chat_edit_disabled_chat"
-PROVIDED_DATA_INVALID_TO_EDIT_THE_CHAT_ERROR: str = "provided_data_invalid_to_edit_the_chat"
 YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_CHAT_ERROR: str = (
     "you_dont_have_permissions_to_edit_this_chat"
 )
-CHAT_EDITED_SUCCESS: str = "chat_edited_success"
 
 KEYS_IN_NEW_DATA_TO_KEEP: list[str] = ["name", "image"]
 
@@ -53,7 +53,7 @@ def validate_input_data(data: chat_data) -> None:
     if chat_instance.disabled:
         raise ValueError(CANT_EDIT_DISABLED_CHAT_ERROR)
     if not user_id and chat_instance.is_group():
-        raise ValueError(USER_ID_NOT_PROVIDED)
+        raise ValueError(USER_ID_NOT_PROVIDED_ERROR)
     elif user_id and chat_instance.is_group():
         if not check_user_is_chat_admin(chat=chat_instance, user_id=user_id):
             raise ValueError(YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_CHAT_ERROR)
@@ -74,7 +74,7 @@ def edit_chat(*, chat: Chat, new_data: chat_data) -> Optional[str]:
             "new_data": remove_unnecessary_data(chat.__dict__)
         }
     except Exception:
-        raise ValueError(PROVIDED_DATA_INVALID_TO_EDIT_THE_CHAT_ERROR)
+        raise ValueError(PROVIDED_INVALID_DATA_ERROR)
 
 
 def edit_chat_consumer() -> None:

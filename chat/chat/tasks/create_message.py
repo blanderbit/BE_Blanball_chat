@@ -6,6 +6,12 @@ from kafka import KafkaConsumer
 from chat.tasks.default_producer import (
     default_producer,
 )
+from chat.errors import (
+    CHAT_ID_NOT_PROVIDED_ERROR,
+    USER_ID_NOT_PROVIDED_ERROR,
+    CHAT_NOT_FOUND_ERROR,
+    PROVIDED_INVALID_DATA_ERROR,
+)
 from chat.utils import (
     RESPONSE_STATUSES,
     generate_response,
@@ -21,13 +27,8 @@ TOPIC_NAME: str = "create_message"
 # the name of the topic to which we send the answer
 RESPONSE_TOPIC_NAME: str = "create_message_response"
 
-CHAT_ID_NOT_PROVIDED_ERROR: str = "chat_id_not_provided"
-USER_ID_NOT_PROVIDED_ERROR: str = "user_id_not_provided"
 MESSAGE_NOT_PROVIDED_ERROR: str = "message_not_provided"
 CANT_SEND_MESSAGE_IN_DISABLED_CHAT_ERROR: str = "cant_send_message_in_disabled_chat"
-PROVIDED_DATA_INVALID_TO_CREATE_THE_MESSAGE_ERROR: str = "provided_data_invalid_to_create_the_message"
-CHAT_NOT_FOUND_ERROR: str = "chat_not_found"
-MESSAGE_CREATED_SUCCESS: str = "message_created"
 
 CREATE_MESSAGE_FIELDS: list[str] = ["sender_id", "text", "chat"]
 
@@ -79,7 +80,7 @@ def create_message(*, data: message_data) -> Optional[str]:
             "users": chat_instance.users
         }
     except Exception:
-        raise ValueError(PROVIDED_DATA_INVALID_TO_CREATE_THE_MESSAGE_ERROR)
+        raise ValueError(PROVIDED_INVALID_DATA_ERROR)
 
 
 def create_message_consumer() -> None:

@@ -2,8 +2,6 @@ from typing import Any, Optional
 
 from chat.models import Chat
 
-CHAT_NOT_FOUND_ERROR: str = "chat_not_found"
-
 
 def get_chat(*, chat_id: Optional[int] = None, event_id: Optional[int] = None) -> Chat:
     try:

@@ -7,6 +7,9 @@ from chat.models import Chat
 from chat.tasks.default_producer import (
     default_producer,
 )
+from chat.errors import (
+    USER_ID_NOT_PROVIDED_ERROR,
+)
 from chat.utils import (
     RESPONSE_STATUSES,
     generate_response,
@@ -19,7 +22,6 @@ TOPIC_NAME: str = "get_chats_list"
 
 # the name of the topic to which we send the answer
 RESPONSE_TOPIC_NAME: str = "get_chats_list_response"
-USER_ID_NOT_PROVIDED: str = "user_id_not_provided"
 
 MESSAGE_TYPE: str = "get_chats_list"
 
@@ -40,7 +42,7 @@ def validate_input_data(data: chat_data) -> None:
     user_id: int = data.get("user_id")
 
     if not user_id:
-        raise ValueError(USER_ID_NOT_PROVIDED)
+        raise ValueError(USER_ID_NOT_PROVIDED_ERROR)
 
 
 def get_chats_list(*, data: chat_data) -> None:
