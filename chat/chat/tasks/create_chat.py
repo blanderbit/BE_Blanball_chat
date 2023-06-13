@@ -21,7 +21,7 @@ RESPONSE_TOPIC_NAME: str = "create_chat_response"
 CHAT_NAME_NOT_PROVIDED_ERROR: str = "name_not_provided"
 CHAT_AUTOR_NOT_PROVIDED_ERROR: str = "author_not_provided"
 REQUEST_ID_NOT_PROVIDED_ERROR: str = "request_id_not_provided"
-CHAT_EVENT_ID_NOT_PROVIDED: str = "event_id_not_provided"
+EVENT_ID_NOT_PROVIDED: str = "event_id_not_provided"
 PROVIDED_DATA_INVALID_TO_CREATE_THE_CHAT_ERROR: str = "provided_data_invalid_to_create_the_chat"
 
 MESSAGE_TYPE: str = "create_chat"
@@ -53,7 +53,7 @@ def set_chat_type(data: chat_data) -> str:
         else:
             return Chat.Type.PERSONAL
     elif chat_type == Chat.Type.EVENT_GROUP and not event_id:
-        raise ValueError(CHAT_EVENT_ID_NOT_PROVIDED)
+        raise ValueError(EVENT_ID_NOT_PROVIDED)
     return chat_type
 
 
@@ -76,7 +76,17 @@ def create_chat(data: chat_data) -> Optional[chat_data]:
                 for user in users
             ],
         )
-        return chat.get_all_data()
+        chat_data: dict[str, Any] = {
+            "id": chat.id,
+            "name": chat.name,
+            "type": chat.type,
+            "image": chat.image,
+        }
+
+        return {
+            "users": chat.users,
+            "chat_data": chat_data,
+        }
     except Exception:
         raise ValueError(PROVIDED_DATA_INVALID_TO_CREATE_THE_CHAT_ERROR)
 

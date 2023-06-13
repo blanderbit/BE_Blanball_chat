@@ -80,7 +80,10 @@ def delete_chat(*, user_id: int, chat: Chat) -> None:
             chat.delete()
         else:
             remove_user_from_chat(user_id=user["user_id"], chat=chat)
-    return CHAT_DELETED_SUCCESS
+    return {
+        "chat_id": chat.id,
+        "users": chat.users
+    }
 
 
 def delete_chat_consumer() -> None:

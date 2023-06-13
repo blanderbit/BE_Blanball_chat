@@ -82,7 +82,11 @@ def remove_user_from_chat(
     if len(chat_instance.users) == 0:
         chat.delete()
 
-    return USER_REMOVED_FROM_THE_CHAT_SUCCESS
+    return {
+        "chat_id": chat.id,
+        "users": chat.users,
+        "removed_user": user_id
+    }
 
 
 def remove_user_from_chat_consumer() -> None:

@@ -44,6 +44,6 @@ def check_is_all_users_deleted_personal_chat(*, chat: Chat) -> bool:
 def check_user_is_chat_member(*, chat: Chat, user_id: int) -> bool:
     return any(
         user.get("user_id") == user_id
-        and is_user_in_chat(user)
+        and is_valid_user(user)
         for user in chat.users
     )

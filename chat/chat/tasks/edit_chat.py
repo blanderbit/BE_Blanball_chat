@@ -68,7 +68,11 @@ def edit_chat(*, chat: Chat, new_data: chat_data) -> Optional[str]:
         chat.__dict__.update(prepared_data)
         chat.save()
 
-        return CHAT_EDITED_SUCCESS
+        return {
+            "chat_id": chat.id,
+            "users": chat.users,
+            "new_data": remove_unnecessary_data(chat.__dict__)
+        }
     except Exception:
         raise ValueError(PROVIDED_DATA_INVALID_TO_EDIT_THE_CHAT_ERROR)
 

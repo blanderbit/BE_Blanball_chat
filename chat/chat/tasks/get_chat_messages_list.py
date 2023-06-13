@@ -60,15 +60,11 @@ def validate_input_data(data: chat_data) -> None:
 
 
 def get_chat_messages_list(*, data: chat_data) -> None:
-    user_id: Optional[int] = data.get("user_id")
     offset: int = data.get("offset", 10)
     page: int = data.get("page", 1)
     search: Optional[str] = data.get("search")
 
-    queryset = Messsage.objects.filter(
-        sender_id=user_id,
-        chat__id=chat_instance.id
-    )
+    queryset = chat_instance.messages.all()
 
     if search:
         queryset = queryset.filter(text__icontains=search)

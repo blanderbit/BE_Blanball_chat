@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 
 from django.conf import settings
 from kafka import KafkaConsumer
@@ -29,16 +29,17 @@ CANT_ADD_USER_TO_PERSONAL_CHAT_ERROR: str = "cant_add_user_to_personal_chat"
 CANT_ADD_USER_WHO_IS_ALREADY_IN_THE_CHAT_ERROR: str = (
     "cant_add_user_who_is_already_in_the_chat"
 )
+LIMIT_OF_USERS_REACHED_ERROR: str = "limit_of_users_{limit}_reached"
 
 USER_ADDED_TO_CHAT_SUCCESS: dict[str, str] = "user_added_to_chat"
 
-chat_data = dict[str, Any]
+add_user_to_chat_data = dict[str, int]
 
 
-def validate_input_data(data: chat_data) -> None:
-    user_id = data.get("user_id")
-    event_id = data.get("event_id")
-    chat_id = data.get("chat_id")
+def validate_input_data(data: add_user_to_chat_data) -> None:
+    user_id: Optional[int] = data.get("user_id")
+    event_id: Optional[int] = data.get("event_id")
+    chat_id: Optional[int] = data.get("chat_id")
 
     if not user_id:
         raise ValueError(USER_ID_NOT_PROVIDED_ERROR)
@@ -48,6 +49,10 @@ def validate_input_data(data: chat_data) -> None:
     global chat_instance
     chat_instance = get_chat(chat_id=chat_id, event_id=event_id)
 
+    if len(chat_instance.users) >= chat_instance.chat_users_count_limit:
+        raise ValueError(LIMIT_OF_USERS_REACHED_ERROR.format(
+            limit=chat_instance.chat_users_count_limit
+        ))
     if chat_instance.type == Chat.Type.PERSONAL:
         raise ValueError(CANT_ADD_USER_TO_PERSONAL_CHAT_ERROR)
     elif check_user_is_chat_member(chat=chat_instance, user_id=user_id):
@@ -63,7 +68,11 @@ def add_user_to_chat(*, user_id: int, chat: Chat) -> str:
     )
     chat.save()
 
-    return USER_ADDED_TO_CHAT_SUCCESS
+    return {
+        "chat_id": chat.id,
+        "users": chat.users,
+        "new_user": user_id
+    }
 
 
 def add_user_to_chat_consumer() -> None:

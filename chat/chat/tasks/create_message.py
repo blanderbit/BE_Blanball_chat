@@ -3,9 +3,6 @@ from typing import Any, Optional
 from django.conf import settings
 from kafka import KafkaConsumer
 
-from chat.models import (
-    Messsage
-)
 from chat.tasks.default_producer import (
     default_producer,
 )
@@ -63,7 +60,6 @@ def validate_input_data(data: message_data) -> None:
 
 
 def prepare_data_before_create_message(*, data: message_data) -> message_data:
-    data["chat"] = chat_instance
     data["sender_id"] = data["user_id"]
     prepared_data = remove_unnecessary_data(
         data, *CREATE_MESSAGE_FIELDS
@@ -75,9 +71,13 @@ def prepare_data_before_create_message(*, data: message_data) -> message_data:
 def create_message(*, data: message_data) -> Optional[str]:
     try:
         prepared_data = prepare_data_before_create_message(data=data)
-        Messsage.objects.create(**prepared_data)
+        message = chat_instance.messages.create(**prepared_data)
 
-        return MESSAGE_CREATED_SUCCESS
+        return {
+            "chat_id": chat_instance.id,
+            "message_data": message.get_all_data(),
+            "users": chat_instance.users
+        }
     except Exception:
         raise ValueError(PROVIDED_DATA_INVALID_TO_CREATE_THE_MESSAGE_ERROR)
 

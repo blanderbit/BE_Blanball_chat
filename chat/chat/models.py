@@ -1,11 +1,75 @@
 from datetime import datetime, timedelta
+from decouple import config
 from typing import Any, Optional, Union, final
 
 from django.core.validators import (
     MinValueValidator,
 )
 from django.db import models
+from django.db.models import Count
 from django.db.models.query import QuerySet
+from django.utils import timezone
+
+
+@final
+class Messsage(models.Model):
+    sender_id: int = models.BigIntegerField(validators=[MinValueValidator(1)])
+    text: str = models.CharField(max_length=500)
+    time_created: datetime = models.DateTimeField(auto_now_add=True)
+    readed_by: bool = models.JSONField(default=list)
+    disabled: bool = models.BooleanField(default=False)
+    edited: bool = models.BooleanField(default=False)
+
+    def __repr__(self) -> str:
+        return "<Messsage %s>" % self.id
+
+    def __str__(self) -> str:
+        return self.text
+
+    def is_expired_to_edit(self) -> bool:
+        ten_minutes_ago = timezone.now() - timedelta(minutes=10)
+        return self.time_created <= ten_minutes_ago
+
+    def mark_as_read(self, user_id: int) -> None:
+        if user_id != self.sender_id:
+            existing_users = [user['user_id'] for user in self.readed_by]
+            if user_id not in existing_users:
+                self.readed_by.append({
+                    "user_id": user_id,
+                    "time_when_was_readed": str(timezone.now())
+                })
+                self.save()
+
+    def mark_as_unread(self, user_id: int) -> None:
+        if user_id != self.sender_id:
+            self.readed_by = [message for message in self.readed_by if message["user_id"] != user_id]
+            self.save()
+
+    def get_all_data(self) -> dict[str, Any]:
+        return {
+            "sender_id": self.sender_id,
+            "text": self.text,
+            "time_created": str(self.time_created),
+        }
+
+    @property
+    def string_time_created(self) -> str:
+        return str(self.time_created)
+
+    @staticmethod
+    def get_all() -> QuerySet["Chat"]:
+        """
+        getting all records with optimized selection from the database
+        """
+        return Messsage.objects.all()
+
+    class Meta:
+        # the name of the table in the database for this model
+        db_table: str = "message"
+        verbose_name: str = "message"
+        verbose_name_plural: str = "messages"
+        # sorting database records for this model by default
+        ordering: list[str] = ["-id"]
 
 
 @final
@@ -21,11 +85,14 @@ class Chat(models.Model):
     type: str = models.CharField(
         choices=Type.choices, max_length=15, blank=False, null=False
     )
-    users: Optional[dict[str, Union[str, int]]] = models.JSONField(null=True)
+    users: Optional[dict[str, Union[str, int]]] = models.JSONField(default=list)
     event_id: Optional[int] = models.BigIntegerField(
         validators=[MinValueValidator(1)], null=True
     )
     image: Optional[str] = models.CharField(max_length=10000, null=True)
+    messages: list[Optional[Messsage]] = models.ManyToManyField(
+        Messsage, related_name="chat", blank=True
+    )
 
     def __repr__(self) -> str:
         return "<Chat %s>" % self.id
@@ -53,6 +120,25 @@ class Chat(models.Model):
     def is_group(self) -> bool:
         return self.type == Chat.Type.GROUP or self.type == Chat.Type.EVENT_GROUP
 
+    def unread_messages_count(self, user_id: int) -> int:
+        filter_query: dict[str, int] = {
+            'user_id': user_id,
+        }
+        return self.messages.exclude(readed_by__contains=[filter_query]).count()
+
+    def get_all_chats_unread_messages_count_for_user(self, user_id: int) -> int:
+        chats: QuerySet[Chat] = self.get_only_available_chats_for_user(user_id)
+        unread_count: int = 0
+
+        for chat in chats:
+            unread_count += chat.unread_messages_count(user_id=user_id)
+
+        return unread_count
+
+    @property
+    def chat_users_count_limit() -> int:
+        return config("CHAT_USERS_COUNT_LIMIT", default=100, cast=int)
+
     @staticmethod
     def create_user_data_before_add_to_chat(
         *,
@@ -74,56 +160,30 @@ class Chat(models.Model):
 
     @staticmethod
     def get_only_available_chats_for_user(user_id: int) -> QuerySet["Chat"]:
-        return Chat.objects.filter(users__0__user_id=user_id, users__0__chat_deleted=False)
+
+        filter_query: dict[str, Union[int, bool]] = {
+            'user_id': user_id,
+            'chat_deleted': False,
+        }
+        return Chat.objects.filter(
+            users__contains=[filter_query]
+        ).annotate(
+            message_count=Count('messages')
+        ).order_by('-messages__time_created', "-time_created", '-message_count', "-id")
 
     @property
-    def chat_last_message(self) -> str:
-        return Messsage.objects.filter(chat__id=self.id).last()
+    def last_message(self) -> str:
+
+        message = Messsage.objects.filter(chat__id=self.id).last()
+
+        if message:
+            return message.text
+        return None
 
     class Meta:
         # the name of the table in the database for this model
         db_table: str = "chat"
         verbose_name: str = "chat"
         verbose_name_plural: str = "chats"
-        # sorting database records for this model by default
-        ordering: list[str] = ["-id"]
-
-
-@final
-class Messsage(models.Model):
-    sender_id: int = models.BigIntegerField(validators=[MinValueValidator(1)])
-    chat: Chat = models.ForeignKey(Chat, on_delete=models.CASCADE)
-    text: str = models.CharField(max_length=500)
-    time_created: datetime = models.DateTimeField(auto_now_add=True)
-    readed_by: bool = models.JSONField(null=True)
-    disabled: bool = models.BooleanField(default=False)
-    edited: bool = models.BooleanField(default=False)
-
-    def __repr__(self) -> str:
-        return "<Messsage %s>" % self.id
-
-    def __str__(self) -> str:
-        return self.text
-
-    def is_expired_to_edit(self) -> bool:
-        ten_minutes_ago = datetime.now() - timedelta(minutes=10)
-        return self.time_created <= ten_minutes_ago
-
-    @property
-    def string_time_created(self) -> str:
-        return str(self.time_created)
-
-    @staticmethod
-    def get_all() -> QuerySet["Chat"]:
-        """
-        getting all records with optimized selection from the database
-        """
-        return Messsage.objects.select_related("chat")
-
-    class Meta:
-        # the name of the table in the database for this model
-        db_table: str = "message"
-        verbose_name: str = "message"
-        verbose_name_plural: str = "messages"
         # sorting database records for this model by default
         ordering: list[str] = ["-id"]

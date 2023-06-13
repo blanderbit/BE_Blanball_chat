@@ -4,7 +4,8 @@ from django.conf import settings
 from kafka import KafkaConsumer
 
 from chat.models import (
-    Messsage
+    Messsage,
+    Chat
 )
 from chat.tasks.default_producer import (
     default_producer,
@@ -25,7 +26,7 @@ TOPIC_NAME: str = "edit_message"
 RESPONSE_TOPIC_NAME: str = "edit_message_response"
 
 USER_ID_NOT_PROVIDED_ERROR: str = "user_id_not_provided"
-MESSAGE_ID_NOT_PROVIDED: str = "message_id_not_provided"
+MESSAGE_ID_NOT_PROVIDED_ERROR: str = "message_id_not_provided"
 MESSAGE_NOT_PROVIDED_ERROR: str = "message_not_provided"
 CANT_EDIT_MESSAGE_IN_DISABLED_CHAT_ERROR: str = "cant_edit_message_in_disabled_chat"
 PROVIDED_DATA_INVALID_TO_EDIT_THE_MESSAGE_ERROR: str = "provided_data_invalid_to_edit_the_message"
@@ -35,12 +36,13 @@ CHAT_NOT_FOUND_ERROR: str = "chat_not_found"
 MESSAGE_EDITED_SUCCESS: str = "message_edited"
 
 
-EDIT_MESSAGE_FIELDS: list[str] = ["text"]
+EDIT_MESSAGE_FIELDS: list[str] = ["text", "id"]
 
 MESSAGE_TYPE: str = "edit_message"
 
 
 message_data = dict[str, Any]
+chat_instance: Optional[Chat] = None
 
 
 def validate_input_data(data: message_data) -> None:
@@ -50,11 +52,11 @@ def validate_input_data(data: message_data) -> None:
     if not user_id:
         raise ValueError(USER_ID_NOT_PROVIDED_ERROR)
     if not message_id:
-        raise ValueError(MESSAGE_ID_NOT_PROVIDED)
+        raise ValueError(MESSAGE_ID_NOT_PROVIDED_ERROR)
 
     global message_instance
     message_instance = get_message(message_id=message_id)
-    chat_instance = message_instance.chat
+    chat_instance = message_instance.chat.first()
 
     if not check_user_is_chat_member(chat=chat_instance, user_id=user_id):
         raise ValueError(CHAT_NOT_FOUND_ERROR)
@@ -85,7 +87,11 @@ def edit_message(*, message: Messsage, new_data: message_data) -> Optional[str]:
         message.edited = True
         message.save()
 
-        return MESSAGE_EDITED_SUCCESS
+        return {
+            "chat_id": chat_instance.id,
+            "users": chat_instance.users,
+            "new_data": remove_unnecessary_data(message.__dict__)
+        }
     except Exception:
         raise ValueError(PROVIDED_DATA_INVALID_TO_EDIT_THE_MESSAGE_ERROR)
 

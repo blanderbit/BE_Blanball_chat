@@ -34,3 +34,6 @@ from chat.utils.remove_unnecessary_data import (
 from chat.utils.get_message import (
     get_message as get_message,
 )
+from chat.utils.get_message import (
+    get_message_without_error as get_message_without_error
+)

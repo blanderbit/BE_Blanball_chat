@@ -43,7 +43,10 @@ def disable_chat(*, chat: Chat) -> None:
     chat.disabled = True
     chat.save()
 
-    return CHAT_DISABLED_SUCCESS
+    return {
+        "chat_id": chat.id,
+        "users": chat.users
+    }
 
 
 def disable_chat_consumer() -> None:
