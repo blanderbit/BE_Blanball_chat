@@ -31,11 +31,7 @@ RESPONSE_TOPIC_NAME: str = "create_message_response"
 
 CANT_SEND_MESSAGE_IN_DISABLED_CHAT_ERROR: str = "cant_send_message_in_disabled_chat"
 
-CREATE_MESSAGE_FIELDS: list[str] = [
-    "sender_id",
-    "text",
-    "reply_to"
-]
+CREATE_MESSAGE_FIELDS: list[str] = ["sender_id", "text", "reply_to"]
 
 MESSAGE_TYPE: str = "create_message"
 
@@ -60,7 +56,6 @@ def validate_input_data(data: message_data) -> None:
     chat_instance = get_chat(chat_id=chat_id)
 
     if reply_to_message_id:
-
         if not chat_instance.messages.filter(id=reply_to_message_id).exists():
             raise NotFoundException(object="reply_to_message")
 

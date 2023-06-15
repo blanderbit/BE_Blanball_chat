@@ -1,13 +1,13 @@
 from typing import Union
-from chat.models import Chat
 
 from rest_framework.serializers import (
-    ModelSerializer
+    ModelSerializer,
 )
+
+from chat.models import Chat
 
 
 class ChatsListSerializer(ModelSerializer):
-
     class Meta:
         model: Chat = Chat
         fields: Union[str, list[str]] = [

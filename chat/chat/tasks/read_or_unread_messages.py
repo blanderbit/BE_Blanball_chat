@@ -6,8 +6,8 @@ from kafka import KafkaConsumer
 
 from chat.exceptions import (
     COMPARED_CHAT_EXCEPTIONS,
-    NotProvidedException,
     InvalidDataException,
+    NotProvidedException,
 )
 from chat.models import Messsage
 from chat.tasks.default_producer import (

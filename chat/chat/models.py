@@ -20,10 +20,7 @@ class Messsage(models.Model):
     disabled: bool = models.BooleanField(default=False)
     edited: bool = models.BooleanField(default=False)
     reply_to: int = models.ForeignKey(
-        "self",
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name="replies"
+        "self", on_delete=models.SET_NULL, null=True, related_name="replies"
     )
 
     def __repr__(self) -> str:

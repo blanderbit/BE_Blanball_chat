@@ -1,9 +1,10 @@
 from typing import Union
-from chat.models import Messsage
 
 from rest_framework.serializers import (
-    ModelSerializer
+    ModelSerializer,
 )
+
+from chat.models import Messsage
 
 
 class ReplyToSerilizer(ModelSerializer):
@@ -16,7 +17,6 @@ class ReplyToSerilizer(ModelSerializer):
 
 
 class MessagesListSerializer(ModelSerializer):
-
     reply_to = ReplyToSerilizer()
 
     class Meta:
@@ -28,5 +28,5 @@ class MessagesListSerializer(ModelSerializer):
             "time_created",
             "edited",
             "readed_by",
-            "reply_to"
+            "reply_to",
         ]

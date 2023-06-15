@@ -1,11 +1,10 @@
-from chat.exceptions import (
-    InvalidDataException
-)
 from django.core.paginator import (
     InvalidPage,
     Paginator,
 )
 from django.db.models.query import QuerySet
+
+from chat.exceptions import InvalidDataException
 
 
 def custom_pagination(

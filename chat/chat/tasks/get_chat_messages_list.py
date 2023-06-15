@@ -8,6 +8,9 @@ from chat.exceptions import (
     NotFoundException,
     NotProvidedException,
 )
+from chat.serializers import (
+    MessagesListSerializer,
+)
 from chat.tasks.default_producer import (
     default_producer,
 )
@@ -17,9 +20,6 @@ from chat.utils import (
     custom_pagination,
     generate_response,
     get_chat,
-)
-from chat.serializers import (
-    MessagesListSerializer
 )
 
 # the name of the main topic that we
@@ -64,7 +64,7 @@ def get_chat_messages_list(*, data: chat_data) -> None:
         queryset=queryset,
         offset=offset,
         page=page,
-        serializer_class=MessagesListSerializer
+        serializer_class=MessagesListSerializer,
     )
 
 
