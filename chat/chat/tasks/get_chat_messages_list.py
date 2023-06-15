@@ -18,6 +18,9 @@ from chat.utils import (
     generate_response,
     get_chat,
 )
+from chat.serializers import (
+    MessagesListSerializer
+)
 
 # the name of the main topic that we
 # are listening to receive data from outside
@@ -27,16 +30,6 @@ TOPIC_NAME: str = "get_chat_messages_list"
 RESPONSE_TOPIC_NAME: str = "get_chat_messages_list_response"
 
 MESSAGE_TYPE: str = "get_chat_messages_list"
-
-MESSAGE_FIELDS_TO_SERIALIZE: list[str] = [
-    "id",
-    "sender_id",
-    "text",
-    "string_time_created",
-    "readed_by",
-    "disabled",
-    "edited",
-]
 
 chat_data = dict[str, Any]
 
@@ -68,7 +61,10 @@ def get_chat_messages_list(*, data: chat_data) -> None:
         queryset = queryset.filter(text__icontains=search)
 
     return custom_pagination(
-        queryset=queryset, offset=offset, page=page, fields=MESSAGE_FIELDS_TO_SERIALIZE
+        queryset=queryset,
+        offset=offset,
+        page=page,
+        serializer_class=MessagesListSerializer
     )
 
 

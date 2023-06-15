@@ -7,6 +7,7 @@ from kafka import KafkaConsumer
 from chat.exceptions import (
     COMPARED_CHAT_EXCEPTIONS,
     NotProvidedException,
+    InvalidDataException,
 )
 from chat.models import Messsage
 from chat.tasks.default_producer import (
@@ -47,7 +48,7 @@ def validate_input_data(data: message_data) -> None:
     if not action:
         raise NotProvidedException(fields=["action"])
     if action not in ACTION_OPTIONS:
-        raise ValueError(ACTION_INVALID_ERROR)
+        raise InvalidDataException(ACTION_INVALID_ERROR)
 
     if not user_id:
         raise NotProvidedException(fields=["user_id"])

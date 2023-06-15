@@ -15,6 +15,7 @@ INSTALLED_APPS: list[str] = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
+    "rest_framework",
     "chat.apps.ChatConfig",
 ]
 

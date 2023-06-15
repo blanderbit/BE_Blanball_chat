@@ -19,6 +19,12 @@ class Messsage(models.Model):
     readed_by: bool = models.JSONField(default=list)
     disabled: bool = models.BooleanField(default=False)
     edited: bool = models.BooleanField(default=False)
+    reply_to: int = models.ForeignKey(
+        "self",
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="replies"
+    )
 
     def __repr__(self) -> str:
         return "<Messsage %s>" % self.id
@@ -53,10 +59,6 @@ class Messsage(models.Model):
             "time_created": str(self.time_created),
         }
 
-    @property
-    def string_time_created(self) -> str:
-        return str(self.time_created)
-
     @staticmethod
     def get_all() -> QuerySet["Chat"]:
         """
@@ -86,6 +88,7 @@ class Chat(models.Model):
     type: str = models.CharField(
         choices=Type.choices, max_length=15, blank=False, null=False
     )
+    # TODO нужно подумать о связи с моделей юзера
     users: Optional[dict[str, Union[str, int]]] = models.JSONField(default=list)
     event_id: Optional[int] = models.BigIntegerField(
         validators=[MinValueValidator(1)], null=True
@@ -161,6 +164,7 @@ class Chat(models.Model):
 
     @staticmethod
     def get_only_available_chats_for_user(user_id: int) -> QuerySet["Chat"]:
+        # TODO если поменяется связка с юзеров то нужно переделать
         filter_query: dict[str, Union[int, bool]] = {
             "user_id": user_id,
             "chat_deleted": False,

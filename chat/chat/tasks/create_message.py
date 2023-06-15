@@ -18,6 +18,7 @@ from chat.utils import (
     check_user_is_chat_member,
     generate_response,
     get_chat,
+    get_message,
     remove_unnecessary_data,
 )
 
@@ -30,7 +31,11 @@ RESPONSE_TOPIC_NAME: str = "create_message_response"
 
 CANT_SEND_MESSAGE_IN_DISABLED_CHAT_ERROR: str = "cant_send_message_in_disabled_chat"
 
-CREATE_MESSAGE_FIELDS: list[str] = ["sender_id", "text", "chat"]
+CREATE_MESSAGE_FIELDS: list[str] = [
+    "sender_id",
+    "text",
+    "reply_to"
+]
 
 MESSAGE_TYPE: str = "create_message"
 
@@ -42,6 +47,7 @@ def validate_input_data(data: message_data) -> None:
     user_id: Optional[int] = data.get("user_id")
     chat_id: Optional[int] = data.get("chat_id")
     message_text: Optional[str] = data.get("text")
+    reply_to_message_id: Optional[str] = data.get("reply_to_message_id")
 
     if not chat_id:
         raise NotProvidedException(fields=["chat_id"])
@@ -53,6 +59,11 @@ def validate_input_data(data: message_data) -> None:
     global chat_instance
     chat_instance = get_chat(chat_id=chat_id)
 
+    if reply_to_message_id:
+
+        if not chat_instance.messages.filter(id=reply_to_message_id).exists():
+            raise NotFoundException(object="reply_to_message")
+
     if not check_user_is_chat_member(chat=chat_instance, user_id=user_id):
         raise NotFoundException(object="chat")
 
@@ -62,8 +73,10 @@ def validate_input_data(data: message_data) -> None:
 
 def prepare_data_before_create_message(*, data: message_data) -> message_data:
     data["sender_id"] = data["user_id"]
-    prepared_data = remove_unnecessary_data(data, *CREATE_MESSAGE_FIELDS)
 
+    if data.get("reply_to_message_id"):
+        data["reply_to"] = get_message(message_id=data["reply_to_message_id"])
+    prepared_data = remove_unnecessary_data(data, *CREATE_MESSAGE_FIELDS)
     return prepared_data
 
 
