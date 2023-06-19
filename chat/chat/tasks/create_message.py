@@ -19,6 +19,7 @@ from chat.utils import (
     generate_response,
     get_chat,
     get_message,
+    prepare_response,
     remove_unnecessary_data,
 )
 
@@ -83,7 +84,7 @@ def create_message(*, data: message_data) -> Optional[str]:
         return {
             "chat_id": chat_instance.id,
             "message_data": message.get_all_data(),
-            "users": chat_instance.users,
+            "users": chat_instance.users
         }
     except Exception as _err:
         print(_err)
@@ -117,7 +118,7 @@ def create_message_consumer() -> None:
                 RESPONSE_TOPIC_NAME,
                 generate_response(
                     status=RESPONSE_STATUSES["ERROR"],
-                    data=str(err),
+                    data=prepare_response(data=str(err)),
                     message_type=MESSAGE_TYPE,
                     request_id=request_id,
                 ),

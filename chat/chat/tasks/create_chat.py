@@ -14,6 +14,7 @@ from chat.tasks.default_producer import (
 )
 from chat.utils import (
     RESPONSE_STATUSES,
+    prepare_response,
     generate_response,
 )
 
@@ -76,16 +77,15 @@ def create_chat(data: chat_data) -> Optional[chat_data]:
                 for user in users
             ],
         )
-        chat_data: dict[str, Any] = {
-            "id": chat.id,
-            "name": chat.name,
-            "type": chat.type,
-            "image": chat.image,
-        }
 
         return {
             "users": chat.users,
-            "chat_data": chat_data,
+            "chat_data": {
+                "id": chat.id,
+                "name": chat.name,
+                "type": chat.type,
+                "image": chat.image,
+            },
         }
     except Exception as _err:
         print(_err)
@@ -117,7 +117,7 @@ def create_chat_consumer() -> None:
                 RESPONSE_TOPIC_NAME,
                 generate_response(
                     status=RESPONSE_STATUSES["ERROR"],
-                    data=str(err),
+                    data=prepare_response(data=str(err)),
                     message_type=MESSAGE_TYPE,
                     request_id=request_id,
                 ),

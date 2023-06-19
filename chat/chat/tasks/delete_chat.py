@@ -23,6 +23,7 @@ from chat.utils import (
     check_user_is_chat_member,
     find_user_in_chat_by_id,
     generate_response,
+    prepare_response,
     get_chat,
 )
 
@@ -113,7 +114,7 @@ def delete_chat_consumer() -> None:
                 RESPONSE_TOPIC_NAME,
                 generate_response(
                     status=RESPONSE_STATUSES["ERROR"],
-                    data=str(err),
+                    data=prepare_response(data=str(err)),
                     message_type=MESSAGE_TYPE,
                     request_id=request_id,
                 ),

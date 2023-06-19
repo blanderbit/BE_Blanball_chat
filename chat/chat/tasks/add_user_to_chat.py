@@ -17,6 +17,7 @@ from chat.utils import (
     check_user_is_chat_member,
     generate_response,
     get_chat,
+    prepare_response,
 )
 
 # the name of the main topic that we
@@ -48,6 +49,9 @@ def validate_input_data(data: dict[str, int]) -> None:
     global chat_instance
     chat_instance = get_chat(chat_id=chat_id, event_id=event_id)
 
+    if check_user_is_chat_member(chat=chat_instance, user_id=user_id):
+        raise PermissionsDeniedException(CANT_ADD_USER_WHO_IS_ALREADY_IN_THE_CHAT_ERROR)
+
     if len(chat_instance.users) >= chat_instance.chat_users_count_limit:
         raise PermissionsDeniedException(
             LIMIT_OF_USERS_REACHED_ERROR.format(
@@ -56,8 +60,6 @@ def validate_input_data(data: dict[str, int]) -> None:
         )
     if chat_instance.type == Chat.Type.PERSONAL:
         raise PermissionsDeniedException(CANT_ADD_USER_TO_PERSONAL_CHAT_ERROR)
-    elif check_user_is_chat_member(chat=chat_instance, user_id=user_id):
-        raise PermissionsDeniedException(CANT_ADD_USER_WHO_IS_ALREADY_IN_THE_CHAT_ERROR)
 
 
 def add_user_to_chat(user_id: int, chat: Chat) -> str:
@@ -69,7 +71,7 @@ def add_user_to_chat(user_id: int, chat: Chat) -> str:
     )
     chat.save()
 
-    return {"chat_id": chat.id, "users": chat.users, "new_user": user_id}
+    return {"chat_id": chat.id, "users": chat.users, "new_user_id": user_id}
 
 
 def add_user_to_chat_consumer() -> None:
@@ -98,7 +100,7 @@ def add_user_to_chat_consumer() -> None:
                 RESPONSE_TOPIC_NAME,
                 generate_response(
                     status=RESPONSE_STATUSES["ERROR"],
-                    data=str(err),
+                    data=prepare_response(data=str(err)),
                     message_type=MESSAGE_TYPE,
                     request_id=request_id,
                 ),

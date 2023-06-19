@@ -19,6 +19,7 @@ from chat.utils import (
     check_user_is_chat_member,
     generate_response,
     get_message,
+    prepare_response,
     remove_unnecessary_data,
 )
 
@@ -88,9 +89,11 @@ def edit_message(*, message: Messsage, new_data: message_data) -> Optional[str]:
         message.save()
 
         return {
-            "chat_id": chat_instance.id,
             "users": chat_instance.users,
-            "new_data": remove_unnecessary_data(message.__dict__),
+            "send_data": {
+                "chat_id": chat_instance.id,
+                "new_data": remove_unnecessary_data(message.__dict__),
+            }
         }
     except Exception as _err:
         print(_err)
@@ -125,7 +128,7 @@ def edit_message_consumer() -> None:
                 RESPONSE_TOPIC_NAME,
                 generate_response(
                     status=RESPONSE_STATUSES["ERROR"],
-                    data=str(err),
+                    data=prepare_response(data=str(err)),
                     message_type=MESSAGE_TYPE,
                     request_id=request_id,
                 ),

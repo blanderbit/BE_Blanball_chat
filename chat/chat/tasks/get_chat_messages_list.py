@@ -20,6 +20,7 @@ from chat.utils import (
     custom_pagination,
     generate_response,
     get_chat,
+    prepare_response,
 )
 
 # the name of the main topic that we
@@ -92,7 +93,7 @@ def get_chat_messages_list_consumer() -> None:
                 RESPONSE_TOPIC_NAME,
                 generate_response(
                     status=RESPONSE_STATUSES["ERROR"],
-                    data=str(err),
+                    data=prepare_response(data=str(err)),
                     message_type=MESSAGE_TYPE,
                     request_id=request_id,
                 ),

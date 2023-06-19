@@ -14,9 +14,9 @@ from django.utils import timezone
 @final
 class Messsage(models.Model):
     sender_id: int = models.BigIntegerField(validators=[MinValueValidator(1)])
-    text: str = models.CharField(max_length=500)
+    text: str = models.CharField(max_length=500, db_index=True)
     time_created: datetime = models.DateTimeField(auto_now_add=True)
-    readed_by: bool = models.JSONField(default=list)
+    readed_by: bool = models.JSONField(default=list, db_index=True)
     disabled: bool = models.BooleanField(default=False)
     edited: bool = models.BooleanField(default=False)
     reply_to: int = models.ForeignKey(
@@ -79,20 +79,21 @@ class Chat(models.Model):
         GROUP: str = "Group"
         EVENT_GROUP: str = "Event_Group"
 
-    name: str = models.CharField(max_length=355)
+    name: str = models.CharField(max_length=355, db_index=True)
     time_created: datetime = models.DateTimeField(auto_now_add=True)
     disabled: bool = models.BooleanField(default=False)
     type: str = models.CharField(
         choices=Type.choices, max_length=15, blank=False, null=False
     )
     # TODO нужно подумать о связи с моделей юзера
-    users: Optional[dict[str, Union[str, int]]] = models.JSONField(default=list)
+    users: Optional[dict[str, Union[str, int]]] = models.JSONField(default=list, db_index=True)
     event_id: Optional[int] = models.BigIntegerField(
         validators=[MinValueValidator(1)], null=True
     )
     image: Optional[str] = models.CharField(max_length=10000, null=True)
     messages: list[Optional[Messsage]] = models.ManyToManyField(
-        Messsage, related_name="chat", blank=True
+        Messsage, related_name="chat", blank=True,
+        db_index=True
     )
 
     def __repr__(self) -> str:
@@ -137,8 +138,16 @@ class Chat(models.Model):
         return unread_count
 
     @property
-    def chat_users_count_limit() -> int:
+    def chat_admins(self):
+        return [user for user in self.users if user.get("admin")]
+
+    @property
+    def chat_users_count_limit(self) -> int:
         return config("CHAT_USERS_COUNT_LIMIT", default=100, cast=int)
+
+    @property
+    def chat_admins_count_limit(self) -> int:
+        return config("CHAT_ADMINS_COUNT_LIMIT", default=3, cast=int)
 
     @staticmethod
     def create_user_data_before_add_to_chat(

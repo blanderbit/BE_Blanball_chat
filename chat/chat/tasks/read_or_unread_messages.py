@@ -18,6 +18,7 @@ from chat.utils import (
     check_user_is_chat_member,
     generate_response,
     get_message_without_error,
+    prepare_response,
 )
 
 # the name of the main topic that we
@@ -43,7 +44,7 @@ messages_objects: QuerySet[Messsage] = []
 def validate_input_data(data: message_data) -> None:
     user_id: Optional[int] = data.get("user_id")
     message_ids: Optional[int] = data.get("message_ids")
-    action: str = data.get("action")
+    action: Optional[str] = data.get("action")
 
     if not action:
         raise NotProvidedException(fields=["action"])
@@ -108,7 +109,7 @@ def read_or_unread_messages_consumer() -> None:
                 RESPONSE_TOPIC_NAME,
                 generate_response(
                     status=RESPONSE_STATUSES["ERROR"],
-                    data=str(err),
+                    data=prepare_response(data=str(err)),
                     message_type=MESSAGE_TYPE,
                 ),
             )

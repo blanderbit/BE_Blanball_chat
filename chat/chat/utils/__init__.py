@@ -43,3 +43,6 @@ from chat.utils.get_message import (
 from chat.utils.remove_unnecessary_data import (
     remove_unnecessary_data as remove_unnecessary_data,
 )
+from chat.utils.prepare_response import (
+    prepare_response as prepare_response
+)
