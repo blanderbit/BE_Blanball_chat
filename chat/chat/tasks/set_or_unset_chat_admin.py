@@ -30,8 +30,8 @@ TOPIC_NAME: str = "set_or_unset_chat_admin_admin"
 # the name of the topic to which we send the answer
 RESPONSE_TOPIC_NAME: str = "set_or_unset_chat_admin_response"
 CANT_SET_ADMIN_IN_PERSONAL_CHAT_ERROR: str = "cant_set_admin_in_personal_chat"
-CANT_SET_OR_UNDSET_ADMIN_WHO_IS_NOT_IN_THE_CHAT_ERROR: str = "cant_{action}_admin_who_not_in_the_chat"
-CANT_SET_ADMIN_WHO_IS_ALREADY_ADMIN_ERROR: str = "cant_set_admin_who_is_already_admin"
+CANT_SET_OR_UNSET_ADMIN_WHO_IS_NOT_IN_THE_CHAT_ERROR: str = "cant_{action}_admin_who_not_in_the_chat"
+CANT_SET_OR_UNSET_ADMIN_WHO_IS_ALREADY_ADMIN_ERROR: str = "cant_{action}_admin_who_is_already_admin"
 CANT_SET_OR_UNSET_ADMIN_WHO_IS_AUTHOR_ERROR: str = "cant_{action}_admin_who_is_author"
 LIMIT_OF_ADMINS_REACHED_ERROR: str = "limit_of_admins_{limit}_reached"
 ACTION_INVALID_ERROR: str = "action_invalid"
@@ -70,7 +70,7 @@ def validate_input_data(data: chat_data) -> None:
 
     if not check_user_is_chat_member(chat=chat_instance, user_id=user_id):
         raise PermissionsDeniedException(
-            CANT_SET_OR_UNDSET_ADMIN_WHO_IS_NOT_IN_THE_CHAT_ERROR.format(
+            CANT_SET_OR_UNSET_ADMIN_WHO_IS_NOT_IN_THE_CHAT_ERROR.format(
                 action=action
             )
         )
@@ -81,10 +81,12 @@ def validate_input_data(data: chat_data) -> None:
                     action=action
                 )
             )
-        if action == ACTION_OPTIONS["set"] and check_user_is_chat_admin(chat=chat_instance, user_id=user_id):
-            raise PermissionsDeniedException(CANT_SET_ADMIN_WHO_IS_ALREADY_ADMIN_ERROR)
-        if action == ACTION_OPTIONS["unset"] and check_user_is_chat_admin(chat=chat_instance, user_id=user_id):
-            raise PermissionsDeniedException(CANT_SET_ADMIN_WHO_IS_ALREADY_ADMIN_ERROR)
+        if check_user_is_chat_admin(chat=chat_instance, user_id=user_id):
+            raise PermissionsDeniedException(
+                CANT_SET_OR_UNSET_ADMIN_WHO_IS_AUTHOR_ERROR.format(
+                    action=action
+                )
+            )
 
     if len(chat_instance.chat_admins) >= chat_instance.chat_admins_count_limit:
         raise PermissionsDeniedException(

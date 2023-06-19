@@ -88,13 +88,14 @@ def edit_message(*, message: Messsage, new_data: message_data) -> Optional[str]:
         message.edited = True
         message.save()
 
-        return {
+        response_data: dict[str, Any] = {
             "users": chat_instance.users,
-            "send_data": {
-                "chat_id": chat_instance.id,
-                "new_data": remove_unnecessary_data(message.__dict__),
-            }
+            "chat_id": chat_instance.id,
+            "new_data": remove_unnecessary_data(message.__dict__),
         }
+
+        return prepare_response(data=response_data, keys_to_keep=["users"])
+
     except Exception as _err:
         print(_err)
         raise InvalidDataException

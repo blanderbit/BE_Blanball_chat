@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 from django.conf import settings
 from kafka import KafkaConsumer
@@ -71,7 +71,13 @@ def add_user_to_chat(user_id: int, chat: Chat) -> str:
     )
     chat.save()
 
-    return {"chat_id": chat.id, "users": chat.users, "new_user_id": user_id}
+    response_data: dict[str, Union[int, list[int]]] = {
+        "chat_id": chat.id,
+        "users": chat.users,
+        "new_user_id": user_id
+    }
+
+    return prepare_response(data=response_data, keys_to_keep=["users"])
 
 
 def add_user_to_chat_consumer() -> None:

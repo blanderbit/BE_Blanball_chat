@@ -37,7 +37,7 @@ from chat.tasks.read_or_unread_messages import (
 from chat.tasks.remove_user_from_chat import (
     remove_user_from_chat_consumer as remove_user_from_chat_consumer,
 )
-from chat.chat.tasks.set_or_unset_chat_admin import (
+from chat.tasks.set_or_unset_chat_admin import (
     set_or_unset_chat_admin_consumer as set_or_unset_chat_admin_consumer
 )
 

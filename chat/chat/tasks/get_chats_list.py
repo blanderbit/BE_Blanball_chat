@@ -39,7 +39,7 @@ def validate_input_data(data: chat_data) -> None:
         raise NotProvidedException(fields=["user_id"])
 
 
-def get_chats_list(*, data: chat_data) -> None:
+def get_chats_list(*, data: chat_data) -> dict[str, Any]:
     user_id: Optional[int] = data.get("user_id")
     offset: int = data.get("offset", 10)
     page: int = data.get("page", 1)
@@ -52,12 +52,13 @@ def get_chats_list(*, data: chat_data) -> None:
             name__icontains=search
         )
 
-    return custom_pagination(
-        queryset=queryset,
-        offset=offset,
-        page=page,
-        serializer_class=ChatsListSerializer,
-    )
+    return prepare_response(
+        data=custom_pagination(
+            queryset=queryset,
+            offset=offset,
+            page=page,
+            serializer_class=ChatsListSerializer,
+        ))
 
 
 def get_chats_list_consumer() -> None:

@@ -78,7 +78,7 @@ def create_chat(data: chat_data) -> Optional[chat_data]:
             ],
         )
 
-        return {
+        response_data: dict[str, Any] = {
             "users": chat.users,
             "chat_data": {
                 "id": chat.id,
@@ -87,6 +87,9 @@ def create_chat(data: chat_data) -> Optional[chat_data]:
                 "image": chat.image,
             },
         }
+
+        return prepare_response(data=response_data, keys_to_keep=["users"])
+
     except Exception as _err:
         print(_err)
         raise InvalidDataException

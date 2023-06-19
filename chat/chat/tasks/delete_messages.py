@@ -61,13 +61,13 @@ def validate_input_data(data: message_data) -> None:
             messages_objects.append(message_instance)
 
 
-def delete_messages(*, messages: QuerySet[Messsage]) -> Optional[str]:
-    success: list[int] = []
+def delete_messages(*, messages: QuerySet[Messsage]) -> list[Optional[int]]:
+    success: list[Optional[int]] = []
     for message_obj in messages:
         message_id = message_obj.id
         message_obj.delete()
         success.append(message_id)
-    return success
+    return prepare_response(success)
 
 
 def delete_messages_consumer() -> None:

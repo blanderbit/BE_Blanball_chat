@@ -84,13 +84,13 @@ def remove_user_from_chat(
     if len(chat_instance.users) == 0:
         chat.delete()
 
-    return {
+    response_data: dict[str, Any] = {
         "users": chat.users,
-        "send_data": {
-            "chat_id": chat.id,
-            "removed_user_id": user_id,
-        }
+        "chat_id": chat.id,
+        "removed_user_id": user_id,
     }
+
+    return prepare_response(data=response_data, keys_to_keep=["users"])
 
 
 def remove_user_from_chat_consumer() -> None:

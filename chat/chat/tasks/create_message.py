@@ -81,11 +81,14 @@ def create_message(*, data: message_data) -> Optional[str]:
         prepared_data = prepare_data_before_create_message(data=data)
         message = chat_instance.messages.create(**prepared_data)
 
-        return {
+        response_data: dict[str, Any] = {
+            "users": chat_instance.users,
             "chat_id": chat_instance.id,
             "message_data": message.get_all_data(),
-            "users": chat_instance.users
         }
+
+        return prepare_response(data=response_data, keys_to_keep=["users"])
+
     except Exception as _err:
         print(_err)
         raise InvalidDataException

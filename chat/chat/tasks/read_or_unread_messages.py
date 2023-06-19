@@ -71,15 +71,15 @@ def validate_input_data(data: message_data) -> None:
             messages_objects.append(message_instance)
 
 
-def read_or_unread_messages(*, user_id: int, action: str) -> Optional[str]:
-    success: list[int] = []
+def read_or_unread_messages(*, user_id: int, action: str) -> list[Optional[int]]:
+    success: list[Optional[int]] = []
     for message_obj in messages_objects:
         if action == ACTION_OPTIONS["read"]:
             message_obj.mark_as_read(user_id)
         else:
             message_obj.mark_as_unread(user_id)
         success.append(message_obj.id)
-    return success
+    return prepare_response(success)
 
 
 def read_or_unread_messages_consumer() -> None:
@@ -102,6 +102,7 @@ def read_or_unread_messages_consumer() -> None:
                     status=RESPONSE_STATUSES["SUCCESS"],
                     data=response_data,
                     message_type=MESSAGE_TYPE,
+                    request_id=request_id,
                 ),
             )
         except COMPARED_CHAT_EXCEPTIONS as err:
@@ -111,5 +112,6 @@ def read_or_unread_messages_consumer() -> None:
                     status=RESPONSE_STATUSES["ERROR"],
                     data=prepare_response(data=str(err)),
                     message_type=MESSAGE_TYPE,
+                    request_id=request_id,
                 ),
             )

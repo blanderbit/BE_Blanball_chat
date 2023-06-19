@@ -36,8 +36,8 @@ chat_data = dict[str, Any]
 
 
 def validate_input_data(data: chat_data) -> None:
-    user_id: int = data.get("user_id")
-    chat_id: int = data.get("chat_id")
+    user_id: Optional[int] = data.get("user_id")
+    chat_id: Optional[int] = data.get("chat_id")
 
     if not user_id:
         raise NotProvidedException(fields=["user_id"])
@@ -51,7 +51,7 @@ def validate_input_data(data: chat_data) -> None:
         raise NotFoundException(object="chat")
 
 
-def get_chat_messages_list(*, data: chat_data) -> None:
+def get_chat_messages_list(*, data: chat_data) -> dict[str, Any]:
     offset: int = data.get("offset", 10)
     page: int = data.get("page", 1)
     search: Optional[str] = data.get("search")
@@ -61,12 +61,13 @@ def get_chat_messages_list(*, data: chat_data) -> None:
     if search:
         queryset = queryset.filter(text__icontains=search)
 
-    return custom_pagination(
-        queryset=queryset,
-        offset=offset,
-        page=page,
-        serializer_class=MessagesListSerializer,
-    )
+    return prepare_response(
+        data=custom_pagination(
+            queryset=queryset,
+            offset=offset,
+            page=page,
+            serializer_class=MessagesListSerializer,
+        ))
 
 
 def get_chat_messages_list_consumer() -> None:

@@ -69,11 +69,14 @@ def edit_chat(*, chat: Chat, new_data: chat_data) -> Optional[str]:
         chat.__dict__.update(prepared_data)
         chat.save()
 
-        return {
-            "chat_id": chat.id,
+        response_data: dict[str, Any] = {
             "users": chat.users,
+            "chat_id": chat.id,
             "new_data": remove_unnecessary_data(chat.__dict__),
         }
+
+        return prepare_response(data=response_data, keys_to_keep=["users"])
+
     except Exception as _err:
         print(_err)
         raise InvalidDataException

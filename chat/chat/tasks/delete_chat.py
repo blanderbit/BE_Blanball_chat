@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 from django.conf import settings
 from kafka import KafkaConsumer
@@ -84,7 +84,13 @@ def delete_chat(*, user_id: int, chat: Chat) -> None:
             chat.delete()
         else:
             remove_user_from_chat(user_id=user["user_id"], chat=chat)
-    return {"chat_id": chat.id, "users": chat.users}
+
+    response_data: dict[str, Union[int, list[int]]] = {
+        "users": chat.users,
+        "chat_id": chat.id,
+    }
+
+    return prepare_response(data=response_data, keys_to_keep=["users"])
 
 
 def delete_chat_consumer() -> None:

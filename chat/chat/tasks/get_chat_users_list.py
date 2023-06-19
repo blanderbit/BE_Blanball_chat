@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 
 from django.conf import settings
 from kafka import KafkaConsumer
@@ -31,8 +31,8 @@ MESSAGE_TYPE: str = "get_chat_users_list"
 
 
 def validate_input_data(data: dict[str, int]) -> None:
-    user_id: int = data.get("user_id")
-    chat_id: int = data.get("chat_id")
+    user_id: Optional[int] = data.get("user_id")
+    chat_id: Optional[int] = data.get("chat_id")
 
     if not user_id:
         raise NotProvidedException(fields=["user_id"])
@@ -46,16 +46,17 @@ def validate_input_data(data: dict[str, int]) -> None:
         raise NotFoundException(object="chat")
 
 
-def get_chat_users_list(*, data: dict[str, int]) -> None:
+def get_chat_users_list(*, data: dict[str, int]) -> dict[str, Any]:
     offset: int = data.get("offset", 10)
     page: int = data.get("page", 1)
 
-    return custom_json_field_pagination(
-        model_instance=chat_instance,
-        page=page,
-        offset=offset,
-        field_name="users",
-    )
+    return prepare_response(
+        data=custom_json_field_pagination(
+            model_instance=chat_instance,
+            page=page,
+            offset=offset,
+            field_name="users",
+        ))
 
 
 def get_chat_users_list_consumer() -> None:
