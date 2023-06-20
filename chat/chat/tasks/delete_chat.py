@@ -25,6 +25,7 @@ from chat.utils import (
     generate_response,
     prepare_response,
     get_chat,
+    add_request_data_to_response
 )
 
 # the name of the main topic that we
@@ -99,8 +100,6 @@ def delete_chat_consumer() -> None:
     )
 
     for data in consumer:
-        request_id = data.value.get("request_id")
-
         try:
             validate_input_data(data.value)
             response_data = delete_chat(
@@ -112,7 +111,7 @@ def delete_chat_consumer() -> None:
                     status=RESPONSE_STATUSES["SUCCESS"],
                     data=response_data,
                     message_type=MESSAGE_TYPE,
-                    request_id=request_id,
+                    request_data=add_request_data_to_response(data.value)
                 ),
             )
         except COMPARED_CHAT_EXCEPTIONS as err:
@@ -122,6 +121,6 @@ def delete_chat_consumer() -> None:
                     status=RESPONSE_STATUSES["ERROR"],
                     data=prepare_response(data=str(err)),
                     message_type=MESSAGE_TYPE,
-                    request_id=request_id,
+                    request_data=add_request_data_to_response(data.value)
                 ),
             )

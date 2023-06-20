@@ -6,7 +6,7 @@ RESPONSE_STATUSES: dict[str, str] = {"ERROR": "error", "SUCCESS": "success"}
 
 
 def generate_response(
-    *, status: str, data: Any, message_type: str, request_id: Optional[str] = None
+    *, status: str, data: Any, message_type: str, request_data: Optional[str] = None
 ) -> dict[str, Any]:
     response_data: dict[str, Any] = {
         "message_type": message_type,
@@ -14,6 +14,6 @@ def generate_response(
         "status": status,
         "data": data,
     }
-    if request_id:
-        response_data["request_id"] = request_id
+    if request_data:
+        response_data["request_data"] = request_data
     return response_data

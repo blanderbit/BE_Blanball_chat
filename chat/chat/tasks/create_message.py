@@ -10,6 +10,9 @@ from chat.exceptions import (
     NotProvidedException,
     PermissionsDeniedException,
 )
+from chat.models import (
+    Messsage
+)
 from chat.tasks.default_producer import (
     default_producer,
 )
@@ -21,6 +24,7 @@ from chat.utils import (
     get_message,
     prepare_response,
     remove_unnecessary_data,
+    add_request_data_to_response
 )
 
 # the name of the main topic that we
@@ -79,7 +83,7 @@ def prepare_data_before_create_message(*, data: message_data) -> message_data:
 def create_message(*, data: message_data) -> Optional[str]:
     try:
         prepared_data = prepare_data_before_create_message(data=data)
-        message = chat_instance.messages.create(**prepared_data)
+        message: Messsage = chat_instance.messages.create(**prepared_data)
 
         response_data: dict[str, Any] = {
             "users": chat_instance.users,
@@ -100,8 +104,6 @@ def create_message_consumer() -> None:
     )
 
     for data in consumer:
-        request_id = data.value.get("request_id")
-
         try:
             validate_input_data(data.value)
             response_data = create_message(
@@ -113,7 +115,7 @@ def create_message_consumer() -> None:
                     status=RESPONSE_STATUSES["SUCCESS"],
                     data=response_data,
                     message_type=MESSAGE_TYPE,
-                    request_id=request_id,
+                    request_data=add_request_data_to_response(data.value)
                 ),
             )
         except COMPARED_CHAT_EXCEPTIONS as err:
@@ -123,6 +125,6 @@ def create_message_consumer() -> None:
                     status=RESPONSE_STATUSES["ERROR"],
                     data=prepare_response(data=str(err)),
                     message_type=MESSAGE_TYPE,
-                    request_id=request_id,
+                    request_data=add_request_data_to_response(data.value)
                 ),
             )

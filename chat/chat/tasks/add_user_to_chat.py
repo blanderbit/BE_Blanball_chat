@@ -18,6 +18,7 @@ from chat.utils import (
     generate_response,
     get_chat,
     prepare_response,
+    add_request_data_to_response,
 )
 
 # the name of the main topic that we
@@ -30,6 +31,7 @@ RESPONSE_TOPIC_NAME: str = "add_user_to_chat_response"
 MESSAGE_TYPE: str = "add_user_to_chat"
 
 CANT_ADD_USER_TO_PERSONAL_CHAT_ERROR: str = "cant_add_user_to_personal_chat"
+CANT_ADD_USER_TO_DISABLED_CHAT_ERROR: str = "cant_add_user_to_disabled_chat"
 CANT_ADD_USER_WHO_IS_ALREADY_IN_THE_CHAT_ERROR: str = (
     "cant_add_user_who_is_already_in_the_chat"
 )
@@ -61,6 +63,9 @@ def validate_input_data(data: dict[str, int]) -> None:
     if chat_instance.type == Chat.Type.PERSONAL:
         raise PermissionsDeniedException(CANT_ADD_USER_TO_PERSONAL_CHAT_ERROR)
 
+    if chat_instance.disabled:
+        raise PermissionsDeniedException(CANT_ADD_USER_TO_DISABLED_CHAT_ERROR)
+
 
 def add_user_to_chat(user_id: int, chat: Chat) -> str:
     chat.users.append(
@@ -86,7 +91,6 @@ def add_user_to_chat_consumer() -> None:
     )
 
     for data in consumer:
-        request_id = data.value.get("request_id")
         try:
             validate_input_data(data.value)
             response_data = add_user_to_chat(
@@ -98,7 +102,7 @@ def add_user_to_chat_consumer() -> None:
                     status=RESPONSE_STATUSES["SUCCESS"],
                     data=response_data,
                     message_type=MESSAGE_TYPE,
-                    request_id=request_id,
+                    request_data=add_request_data_to_response(data.value)
                 ),
             )
         except COMPARED_CHAT_EXCEPTIONS as err:
@@ -108,6 +112,6 @@ def add_user_to_chat_consumer() -> None:
                     status=RESPONSE_STATUSES["ERROR"],
                     data=prepare_response(data=str(err)),
                     message_type=MESSAGE_TYPE,
-                    request_id=request_id,
+                    request_data=add_request_data_to_response(data.value)
                 ),
             )

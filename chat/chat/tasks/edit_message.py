@@ -21,6 +21,7 @@ from chat.utils import (
     get_message,
     prepare_response,
     remove_unnecessary_data,
+    add_request_data_to_response
 )
 
 # the name of the main topic that we
@@ -37,7 +38,7 @@ YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_MESSAGE_ERROR: str = (
 )
 
 
-EDIT_MESSAGE_FIELDS: list[str] = ["text", "id"]
+EDIT_MESSAGE_FIELDS: list[str] = ["text"]
 
 MESSAGE_TYPE: str = "edit_message"
 
@@ -57,7 +58,7 @@ def validate_input_data(data: message_data) -> None:
 
     global message_instance
     message_instance = get_message(message_id=message_id)
-    chat_instance = message_instance.chat.first()
+    chat_instance: Chat = message_instance.chat.first()
 
     if not check_user_is_chat_member(chat=chat_instance, user_id=user_id):
         raise NotFoundException(object="chat")
@@ -107,7 +108,6 @@ def edit_message_consumer() -> None:
     )
 
     for data in consumer:
-        request_id = data.value.get("request_id")
 
         try:
             validate_input_data(data.value)
@@ -121,7 +121,7 @@ def edit_message_consumer() -> None:
                     status=RESPONSE_STATUSES["SUCCESS"],
                     data=response_data,
                     message_type=MESSAGE_TYPE,
-                    request_id=request_id,
+                    request_data=add_request_data_to_response(data.value)
                 ),
             )
         except COMPARED_CHAT_EXCEPTIONS as err:
@@ -131,6 +131,6 @@ def edit_message_consumer() -> None:
                     status=RESPONSE_STATUSES["ERROR"],
                     data=prepare_response(data=str(err)),
                     message_type=MESSAGE_TYPE,
-                    request_id=request_id,
+                    request_data=add_request_data_to_response(data.value)
                 ),
             )

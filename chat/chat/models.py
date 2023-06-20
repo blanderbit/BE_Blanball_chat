@@ -51,6 +51,7 @@ class Messsage(models.Model):
 
     def get_all_data(self) -> dict[str, Any]:
         return {
+            "id": self.id,
             "sender_id": self.sender_id,
             "text": self.text,
             "time_created": str(self.time_created),

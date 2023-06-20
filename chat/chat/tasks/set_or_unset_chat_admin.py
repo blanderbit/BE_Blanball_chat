@@ -21,6 +21,7 @@ from chat.utils import (
     check_user_is_chat_member,
     check_user_is_chat_admin,
     prepare_response,
+    add_request_data_to_response
 )
 
 # the name of the main topic that we
@@ -29,10 +30,11 @@ TOPIC_NAME: str = "set_or_unset_chat_admin_admin"
 
 # the name of the topic to which we send the answer
 RESPONSE_TOPIC_NAME: str = "set_or_unset_chat_admin_response"
-CANT_SET_ADMIN_IN_PERSONAL_CHAT_ERROR: str = "cant_set_admin_in_personal_chat"
+CANT_SET_OR_UNSET_ADMIN_IN_PERSONAL_CHAT_ERROR: str = "cant_{action}_admin_in_personal_chat"
 CANT_SET_OR_UNSET_ADMIN_WHO_IS_NOT_IN_THE_CHAT_ERROR: str = "cant_{action}_admin_who_not_in_the_chat"
 CANT_SET_OR_UNSET_ADMIN_WHO_IS_ALREADY_ADMIN_ERROR: str = "cant_{action}_admin_who_is_already_admin"
 CANT_SET_OR_UNSET_ADMIN_WHO_IS_AUTHOR_ERROR: str = "cant_{action}_admin_who_is_author"
+CANT_SET_OR_UNSET_ADMIN_IN_DISABLED_CHAT_ERROR: str = "cant_{action}_admin_in_disabled_chat"
 LIMIT_OF_ADMINS_REACHED_ERROR: str = "limit_of_admins_{limit}_reached"
 ACTION_INVALID_ERROR: str = "action_invalid"
 
@@ -65,37 +67,33 @@ def validate_input_data(data: chat_data) -> None:
     global chat_instance
     chat_instance = get_chat(chat_id=chat_id)
 
-    if not check_user_is_chat_author(chat=chat_instance, user_id=author_id):
-        raise PermissionsDeniedException()
+    check_author_permissions(chat_instance, author_id)
+    check_member_permissions(chat_instance, user_id, action)
 
-    if not check_user_is_chat_member(chat=chat_instance, user_id=user_id):
-        raise PermissionsDeniedException(
-            CANT_SET_OR_UNSET_ADMIN_WHO_IS_NOT_IN_THE_CHAT_ERROR.format(
-                action=action
-            )
-        )
-    else:
-        if check_user_is_chat_author(chat=chat_instance, user_id=user_id):
-            raise PermissionsDeniedException(
-                CANT_SET_OR_UNSET_ADMIN_WHO_IS_AUTHOR_ERROR.format(
-                    action=action
-                )
-            )
-        if check_user_is_chat_admin(chat=chat_instance, user_id=user_id):
-            raise PermissionsDeniedException(
-                CANT_SET_OR_UNSET_ADMIN_WHO_IS_AUTHOR_ERROR.format(
-                    action=action
-                )
-            )
+    if chat_instance.disabled:
+        raise PermissionsDeniedException(CANT_SET_OR_UNSET_ADMIN_IN_DISABLED_CHAT_ERROR.format(action=action))
+
+    if chat_instance.type == Chat.Type.PERSONAL:
+        raise PermissionsDeniedException(CANT_SET_OR_UNSET_ADMIN_IN_PERSONAL_CHAT_ERROR.format(action=action))
 
     if len(chat_instance.chat_admins) >= chat_instance.chat_admins_count_limit:
-        raise PermissionsDeniedException(
-            LIMIT_OF_ADMINS_REACHED_ERROR.format(
-                limit=chat_instance.chat_admins_count_limit
-            )
-        )
-    if chat_instance.type == Chat.Type.PERSONAL:
-        raise PermissionsDeniedException(CANT_SET_ADMIN_IN_PERSONAL_CHAT_ERROR)
+        raise PermissionsDeniedException(LIMIT_OF_ADMINS_REACHED_ERROR.format(limit=chat_instance.chat_admins_count_limit))
+
+
+def check_author_permissions(chat: Chat, author_id: int) -> None:
+    if not check_user_is_chat_author(chat, author_id):
+        raise PermissionsDeniedException()
+
+
+def check_member_permissions(chat: Chat, user_id: int, action: str) -> None:
+    if not check_user_is_chat_member(chat, user_id):
+        raise PermissionsDeniedException(CANT_SET_OR_UNSET_ADMIN_WHO_IS_NOT_IN_THE_CHAT_ERROR.format(action=action))
+
+    if check_user_is_chat_author(chat, user_id):
+        raise PermissionsDeniedException(CANT_SET_OR_UNSET_ADMIN_WHO_IS_AUTHOR_ERROR.format(action=action))
+
+    if check_user_is_chat_admin(chat, user_id):
+        raise PermissionsDeniedException(CANT_SET_OR_UNSET_ADMIN_WHO_IS_ALREADY_ADMIN_ERROR.format(action=action))
 
 
 def set_or_unset_chat_admin(*, chat: Chat, user_id: int, action: str) -> None:
@@ -121,8 +119,6 @@ def set_or_unset_chat_admin_consumer() -> None:
     )
 
     for data in consumer:
-        request_id = data.value.get("request_id")
-
         try:
             validate_input_data(data.value)
             response_data = set_or_unset_chat_admin(
@@ -136,7 +132,7 @@ def set_or_unset_chat_admin_consumer() -> None:
                     status=RESPONSE_STATUSES["SUCCESS"],
                     data=response_data,
                     message_type=MESSAGE_TYPE,
-                    request_id=request_id,
+                    request_data=add_request_data_to_response(data.value)
                 ),
             )
         except COMPARED_CHAT_EXCEPTIONS as err:
@@ -146,6 +142,6 @@ def set_or_unset_chat_admin_consumer() -> None:
                     status=RESPONSE_STATUSES["ERROR"],
                     data=prepare_response(data=str(err)),
                     message_type=MESSAGE_TYPE,
-                    request_id=request_id,
+                    request_data=add_request_data_to_response(data.value)
                 ),
             )

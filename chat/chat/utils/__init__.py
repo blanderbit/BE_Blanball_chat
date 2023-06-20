@@ -46,3 +46,6 @@ from chat.utils.remove_unnecessary_data import (
 from chat.utils.prepare_response import (
     prepare_response as prepare_response
 )
+from chat.utils.add_request_data_to_response import (
+    add_request_data_to_response as add_request_data_to_response
+)
