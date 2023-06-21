@@ -5,7 +5,6 @@ from kafka import KafkaConsumer
 
 from chat.exceptions import (
     COMPARED_CHAT_EXCEPTIONS,
-    NotProvidedException,
     PermissionsDeniedException,
     InvalidDataException,
 )
@@ -20,8 +19,10 @@ from chat.utils import (
     check_user_is_chat_author,
     check_user_is_chat_member,
     check_user_is_chat_admin,
-    prepare_response,
     add_request_data_to_response
+)
+from chat.decorators import (
+    set_required_fields
 )
 
 # the name of the main topic that we
@@ -46,28 +47,20 @@ ACTION_OPTIONS: dict[str, str] = {"set": "set", "unset": "unset"}
 chat_data = dict[str, Any]
 
 
+@set_required_fields(["action", "chat_id", "request_user_id", "user_id"])
 def validate_input_data(data: chat_data) -> None:
-    chat_id: Optional[int] = data.get("chat_id")
-    author_id: Optional[int] = data.get("author_id")
-    user_id: Optional[int] = data.get("user_id")
-    action: Optional[str] = data.get("action")
+    chat_id: int = data.get("chat_id")
+    request_user_id: int = data.get("request_user_id")
+    user_id: int = data.get("user_id")
+    action: str = data.get("action")
 
-    if not action:
-        raise NotProvidedException(fields=["action"])
     if action not in ACTION_OPTIONS:
         raise InvalidDataException(ACTION_INVALID_ERROR)
-
-    if not chat_id:
-        raise NotProvidedException(fields=["chat_id"])
-    if not author_id:
-        raise NotProvidedException(fields=["author_id"])
-    if not user_id:
-        raise NotProvidedException(fields=["user_id"])
 
     global chat_instance
     chat_instance = get_chat(chat_id=chat_id)
 
-    check_author_permissions(chat_instance, author_id)
+    check_author_permissions(chat_instance, request_user_id)
     check_member_permissions(chat_instance, user_id, action)
 
     if chat_instance.disabled:
@@ -80,9 +73,9 @@ def validate_input_data(data: chat_data) -> None:
         raise PermissionsDeniedException(LIMIT_OF_ADMINS_REACHED_ERROR.format(limit=chat_instance.chat_admins_count_limit))
 
 
-def check_author_permissions(chat: Chat, author_id: int) -> None:
-    if not check_user_is_chat_author(chat, author_id):
-        raise PermissionsDeniedException()
+def check_author_permissions(chat: Chat, request_user_id: int) -> None:
+    if not check_user_is_chat_author(chat, request_user_id):
+        raise PermissionsDeniedException
 
 
 def check_member_permissions(chat: Chat, user_id: int, action: str) -> None:
@@ -110,7 +103,7 @@ def set_or_unset_chat_admin(*, chat: Chat, user_id: int, action: str) -> None:
         "new_admin_id": user_id,
     }
 
-    return prepare_response(data=response_data, keys_to_keep=["users"])
+    return response_data
 
 
 def set_or_unset_chat_admin_consumer() -> None:
@@ -140,7 +133,7 @@ def set_or_unset_chat_admin_consumer() -> None:
                 RESPONSE_TOPIC_NAME,
                 generate_response(
                     status=RESPONSE_STATUSES["ERROR"],
-                    data=prepare_response(data=str(err)),
+                    data=str(err),
                     message_type=MESSAGE_TYPE,
                     request_data=add_request_data_to_response(data.value)
                 ),

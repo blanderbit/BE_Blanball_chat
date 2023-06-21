@@ -10,7 +10,8 @@ x-blanball-chat-api-common: &blanball-chat-api-common
   volumes:
     - .:/usr/src/blanball-chat
   networks:
-    - blaball-network
+    - blaball-chat-network
+    - blanball-chat-connection-network
   depends_on:
     blanball-chat-db:
       condition: service_healthy
@@ -26,7 +27,7 @@ services:
     volumes:
       - ./db-data:/var/lib/postgresql/data
     networks:
-      - blaball-network
+      - blaball-chat-network
     ports:
       - 5430:5432
     healthcheck:
@@ -42,7 +43,7 @@ services:
     volumes:
       - redis-data:/usr/src/blanball-chat-redis/storage/redis/data
     networks:
-      - blaball-network
+      - blaball-chat-network
     healthcheck:
       test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
       timeout: 5s
@@ -79,7 +80,8 @@ services:
     volumes:
       - kafka-data:/usr/src/blanball-chat/storage/kafka/data
     networks:
-      - blaball-network
+      - blaball-chat-network
+      - blanball-chat-connection-network
 
   blanball-chat-zookeeper:
     container_name: blanball-chat-zookeeper
@@ -93,12 +95,15 @@ services:
       - zookeeper-data:/usr/src/blanball-chat/storage/zookeeper/data \
       - zookeeper-logs-data:/usr/src/blanball-chat/storage/zookeeper-logs/data \
     networks:
-      - blaball-network
+      - blaball-chat-network
+      - blanball-chat-connection-network
+
 
 networks:
-  blaball-network:
-    external:
-      name: blaball-network
+    blaball-chat-network:
+        name: blaball-chat-network
+    blanball-chat-connection-network:
+        name: blanball-chat-connection-network
 
 volumes:
   kafka-data:

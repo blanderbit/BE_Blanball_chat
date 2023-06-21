@@ -6,7 +6,6 @@ from kafka import KafkaConsumer
 from chat.exceptions import (
     COMPARED_CHAT_EXCEPTIONS,
     NotFoundException,
-    NotProvidedException,
 )
 from chat.serializers import (
     MessagesListSerializer,
@@ -20,8 +19,10 @@ from chat.utils import (
     custom_pagination,
     generate_response,
     get_chat,
-    prepare_response,
     add_request_data_to_response
+)
+from chat.decorators import (
+    set_required_fields
 )
 
 # the name of the main topic that we
@@ -36,19 +37,15 @@ MESSAGE_TYPE: str = "get_chat_messages_list"
 chat_data = dict[str, Any]
 
 
+@set_required_fields(["request_user_id", "chat_id"])
 def validate_input_data(data: chat_data) -> None:
-    user_id: Optional[int] = data.get("user_id")
-    chat_id: Optional[int] = data.get("chat_id")
-
-    if not user_id:
-        raise NotProvidedException(fields=["user_id"])
-    if not chat_id:
-        raise NotProvidedException(fields=["chat_id"])
+    request_user_id: int = data.get("request_user_id")
+    chat_id: int = data.get("chat_id")
 
     global chat_instance
     chat_instance = get_chat(chat_id=chat_id)
 
-    if not check_user_in_chat(chat=chat_instance, user_id=user_id):
+    if not check_user_in_chat(chat=chat_instance, user_id=request_user_id):
         raise NotFoundException(object="chat")
 
 
@@ -62,13 +59,12 @@ def get_chat_messages_list(*, data: chat_data) -> dict[str, Any]:
     if search:
         queryset = queryset.filter(text__icontains=search)
 
-    return prepare_response(
-        data=custom_pagination(
-            queryset=queryset,
-            offset=offset,
-            page=page,
-            serializer_class=MessagesListSerializer,
-        ))
+    return custom_pagination(
+        queryset=queryset,
+        offset=offset,
+        page=page,
+        serializer_class=MessagesListSerializer,
+    )
 
 
 def get_chat_messages_list_consumer() -> None:
@@ -94,7 +90,7 @@ def get_chat_messages_list_consumer() -> None:
                 RESPONSE_TOPIC_NAME,
                 generate_response(
                     status=RESPONSE_STATUSES["ERROR"],
-                    data=prepare_response(data=str(err)),
+                    data=str(err),
                     message_type=MESSAGE_TYPE,
                     request_data=add_request_data_to_response(data.value)
                 ),

@@ -1,3 +1,4 @@
+from typing import Any, Optional
 from django.core.paginator import (
     InvalidPage,
     Paginator,
@@ -13,12 +14,17 @@ def custom_pagination(
     page: int = 1,
     offset: int = 10,
     serializer_class,
+    serializer_context: Optional[dict[str, Any]] = None
 ) -> dict:
     paginator = Paginator(queryset, offset)
 
     try:
         page_objects = paginator.page(page)
-        serialized_data = serializer_class(page_objects.object_list, many=True).data
+        serialized_data = serializer_class(
+            page_objects.object_list,
+            many=True,
+            context=serializer_context
+        ).data
 
         return {
             "current_page": page,

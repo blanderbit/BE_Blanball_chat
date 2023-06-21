@@ -18,9 +18,11 @@ from chat.utils import (
     check_user_is_chat_admin,
     generate_response,
     get_chat,
-    prepare_response,
     remove_unnecessary_data,
     add_request_data_to_response
+)
+from chat.decorators import (
+    set_required_fields
 )
 
 # the name of the main topic that we
@@ -42,23 +44,21 @@ MESSAGE_TYPE: str = "edit_chat"
 chat_data = dict[str, Any]
 
 
+@set_required_fields([["chat_id", "event_id"]])
 def validate_input_data(data: chat_data) -> None:
     chat_id: Optional[int] = data.get("chat_id")
     event_id: Optional[int] = data.get("event_id")
-    user_id: Optional[int] = data.get("user_id")
-
-    if not event_id and not chat_id:
-        raise NotProvidedException(fields=["event_id", "chat_id"])
+    request_user_id: Optional[int] = data.get("userequest_user_idr_id")
 
     global chat_instance
     chat_instance = get_chat(chat_id=chat_id, event_id=event_id)
 
     if chat_instance.disabled:
         raise PermissionsDeniedException(CANT_EDIT_DISABLED_CHAT_ERROR)
-    if not user_id and chat_instance.is_group():
-        raise NotProvidedException(fields=["user_id"])
-    elif user_id and chat_instance.is_group():
-        if not check_user_is_chat_admin(chat=chat_instance, user_id=user_id):
+    if not request_user_id and chat_instance.is_group():
+        raise NotProvidedException(fields=["request_user_id"])
+    elif request_user_id and chat_instance.is_group():
+        if not check_user_is_chat_admin(chat=chat_instance, user_id=request_user_id):
             raise PermissionsDeniedException(
                 YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_CHAT_ERROR
             )
@@ -76,7 +76,7 @@ def edit_chat(*, chat: Chat, new_data: chat_data) -> Optional[str]:
             "new_data": remove_unnecessary_data(chat.__dict__),
         }
 
-        return prepare_response(data=response_data, keys_to_keep=["users"])
+        return response_data
 
     except Exception as _err:
         print(_err)
@@ -108,7 +108,7 @@ def edit_chat_consumer() -> None:
                 RESPONSE_TOPIC_NAME,
                 generate_response(
                     status=RESPONSE_STATUSES["ERROR"],
-                    data=prepare_response(data=str(err)),
+                    data=str(err),
                     message_type=MESSAGE_TYPE,
                     request_data=add_request_data_to_response(data.value)
                 ),

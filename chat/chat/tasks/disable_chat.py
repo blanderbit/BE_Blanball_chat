@@ -5,7 +5,6 @@ from kafka import KafkaConsumer
 
 from chat.exceptions import (
     COMPARED_CHAT_EXCEPTIONS,
-    NotProvidedException,
 )
 from chat.models import Chat
 from chat.tasks.default_producer import (
@@ -15,8 +14,10 @@ from chat.utils import (
     RESPONSE_STATUSES,
     generate_response,
     get_chat,
-    prepare_response,
     add_request_data_to_response
+)
+from chat.decorators import (
+    set_required_fields
 )
 
 # the name of the main topic that we
@@ -32,15 +33,13 @@ MESSAGE_TYPE: str = "disable_chat"
 chat_data = dict[str, Any]
 
 
+@set_required_fields([["chat_id", "event_id"]])
 def validate_input_data(data: chat_data) -> None:
     chat_id: Optional[int] = data.get("chat_id")
     event_id: Optional[int] = data.get("event_id")
 
-    if not event_id and not chat_id:
-        raise NotProvidedException(fields=["event_id", "chat_id"])
-
     global chat_instance
-    chat_instance = get_chat(chat_id=chat_id)
+    chat_instance = get_chat(chat_id=chat_id, event_id=event_id)
 
 
 def disable_chat(*, chat: Chat) -> None:
@@ -52,7 +51,7 @@ def disable_chat(*, chat: Chat) -> None:
         "chat_id": chat.id,
     }
 
-    return prepare_response(data=response_data, keys_to_keep=["users"])
+    return response_data
 
 
 def disable_chat_consumer() -> None:
@@ -80,7 +79,7 @@ def disable_chat_consumer() -> None:
                 RESPONSE_TOPIC_NAME,
                 generate_response(
                     status=RESPONSE_STATUSES["ERROR"],
-                    data=prepare_response(data=str(err)),
+                    data=str(err),
                     message_type=MESSAGE_TYPE,
                     request_data=add_request_data_to_response(data.value)
                 ),

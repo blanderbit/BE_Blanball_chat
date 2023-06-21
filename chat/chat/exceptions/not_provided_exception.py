@@ -3,7 +3,7 @@ from typing import Optional
 
 class NotProvidedException(Exception):
     def __init__(
-        self, message: Optional[str], fields: list[Optional[str]] = []
+        self, message: Optional[str] = None, fields: list[Optional[str]] = []
     ) -> None:
         if not message:
             if len(fields) > 0:

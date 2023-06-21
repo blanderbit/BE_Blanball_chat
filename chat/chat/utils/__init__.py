@@ -43,9 +43,9 @@ from chat.utils.get_message import (
 from chat.utils.remove_unnecessary_data import (
     remove_unnecessary_data as remove_unnecessary_data,
 )
-from chat.utils.prepare_response import (
-    prepare_response as prepare_response
-)
 from chat.utils.add_request_data_to_response import (
     add_request_data_to_response as add_request_data_to_response
+)
+from chat.utils.round_date_and_time import (
+    round_date_and_time as round_date_and_time
 )

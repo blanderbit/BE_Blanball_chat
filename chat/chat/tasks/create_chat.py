@@ -14,9 +14,12 @@ from chat.tasks.default_producer import (
 )
 from chat.utils import (
     RESPONSE_STATUSES,
-    prepare_response,
     generate_response,
-    add_request_data_to_response
+    add_request_data_to_response,
+    round_date_and_time
+)
+from chat.decorators.set_required_fields import (
+    set_required_fields
 )
 
 # the name of the main topic that we
@@ -26,58 +29,58 @@ TOPIC_NAME: str = "create_chat"
 # the name of the topic to which we send the answer
 RESPONSE_TOPIC_NAME: str = "create_chat_response"
 
-MESSAGE_TYPE: str = "create_chat"
-
+MESSAGE_TYPES: dict[str, str] = {
+    Chat.Type.PERSONAL: "create_personal_chat",
+    Chat.Type.GROUP: "create_group_or_event_group_chat",
+    Chat.Type.EVENT_GROUP: "create_group_or_event_group_chat"
+}
 
 chat_data = dict[str, Any]
 
 
+@set_required_fields(["name", "request_user_id"])
 def validate_input_data(data: chat_data) -> None:
-    name: Optional[str] = data.get("name")
-    author: Optional[str] = data.get("author")
-
-    if not name:
-        raise NotProvidedException(fields=["name"])
-    if not author:
-        raise NotProvidedException(fields=["author"])
+    pass
 
 
 def set_chat_type(data: chat_data) -> str:
-    chat_type = data.get("type")
-    chat_users = data.get("users", [])
-    event_id = data.get("event_id")
+    type: Optional[str] = data.get("type")
+    chat_users: list[Optional[int]] = data.get("users", [])
+    event_id: Optional[int] = data.get("event_id")
 
-    if not chat_type:
-        if len(chat_users == 0) or len(chat_users >= 2):
-            if not event_id:
-                return Chat.Type.GROUP
-            return Chat.Type.EVENT_GROUP
+    if not type:
+        if len(chat_users) == 0 or len(chat_users) >= 2:
+            type = Chat.Type.GROUP if not event_id else Chat.Type.EVENT_GROUP
         else:
-            return Chat.Type.PERSONAL
-    elif chat_type == Chat.Type.EVENT_GROUP and not event_id:
+            type = Chat.Type.PERSONAL
+    elif type == Chat.Type.EVENT_GROUP and not event_id:
         raise NotProvidedException(fields=["event_id"])
-    return chat_type
+
+    global message_type
+    message_type = MESSAGE_TYPES[type]
+    return type
 
 
 def create_chat(data: chat_data) -> Optional[chat_data]:
-    users = data.get("users", [])
-    event_id = data.get("event_id")
-    users.append(data["author"])
-    if data.get("user"):
-        users.append(data.get("user"))
+    users: list[Optional[int]] = data.get("users", [])
+    event_id: Optional[int] = data.get("event_id")
+    users.append(data["request_user_id"])
     try:
-        chat = Chat.objects.create(
+        chat: Chat = Chat.objects.create(
             name=data["name"],
             type=set_chat_type(data),
             event_id=event_id,
             users=[
                 Chat.create_user_data_before_add_to_chat(
-                    is_author=user == data["author"],
+                    is_author=user == data["request_user_id"],
                     user_id=user,
                 )
                 for user in users
             ],
         )
+
+        chat.time_created = round_date_and_time(chat.time_created)
+        chat.save()
 
         response_data: dict[str, Any] = {
             "users": chat.users,
@@ -89,11 +92,36 @@ def create_chat(data: chat_data) -> Optional[chat_data]:
             },
         }
 
-        return prepare_response(data=response_data, keys_to_keep=["users"])
+        return response_data
 
     except Exception as _err:
         print(_err)
         raise InvalidDataException
+
+
+def process_create_chat_request(data: chat_data) -> None:
+    try:
+        validate_input_data(data)
+        new_chat_data = create_chat(data)
+        default_producer(
+            RESPONSE_TOPIC_NAME,
+            generate_response(
+                status=RESPONSE_STATUSES["SUCCESS"],
+                data=new_chat_data,
+                message_type=message_type,
+                request_data=add_request_data_to_response(data)
+            ),
+        )
+    except COMPARED_CHAT_EXCEPTIONS as err:
+        default_producer(
+            RESPONSE_TOPIC_NAME,
+            generate_response(
+                status=RESPONSE_STATUSES["ERROR"],
+                data=str(err),
+                message_type=message_type,
+                request_data=add_request_data_to_response(data)
+            ),
+        )
 
 
 def create_chat_consumer() -> None:
@@ -102,25 +130,4 @@ def create_chat_consumer() -> None:
     )
 
     for data in consumer:
-        try:
-            validate_input_data(data.value)
-            new_chat_data = create_chat(data.value)
-            default_producer(
-                RESPONSE_TOPIC_NAME,
-                generate_response(
-                    status=RESPONSE_STATUSES["SUCCESS"],
-                    data=new_chat_data,
-                    message_type=MESSAGE_TYPE,
-                    request_data=add_request_data_to_response(data.value)
-                ),
-            )
-        except COMPARED_CHAT_EXCEPTIONS as err:
-            default_producer(
-                RESPONSE_TOPIC_NAME,
-                generate_response(
-                    status=RESPONSE_STATUSES["ERROR"],
-                    data=prepare_response(data=str(err)),
-                    message_type=MESSAGE_TYPE,
-                    request_data=add_request_data_to_response(data.value)
-                ),
-            )
+        process_create_chat_request(data.value)

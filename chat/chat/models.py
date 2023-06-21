@@ -96,29 +96,34 @@ class Chat(models.Model):
         Messsage, related_name="chat", blank=True,
         db_index=True
     )
+    chat_request_user_id: int = models.BigIntegerField(
+        validators=[MinValueValidator(1)], null=True
+    )
+
+    @property
+    def chat_admins(self):
+        return [user for user in self.users if user.get("admin")]
+
+    @property
+    def chat_users_count_limit(self) -> int:
+        return config("CHAT_USERS_COUNT_LIMIT", default=100, cast=int)
+
+    @property
+    def chat_admins_count_limit(self) -> int:
+        return config("CHAT_ADMINS_COUNT_LIMIT", default=3, cast=int)
+
+    @property
+    def last_message(self) -> Optional[str]:
+        message = Messsage.objects.filter(chat__id=self.id).last()
+
+        if message:
+            return message.text
 
     def __repr__(self) -> str:
         return "<Chat %s>" % self.id
 
     def __str__(self) -> str:
         return self.name
-
-    @staticmethod
-    def get_all() -> QuerySet["Chat"]:
-        """
-        getting all records with optimized selection from the database
-        """
-        return Chat.objects.all()
-
-    def get_all_data(self) -> dict[str, Any]:
-        return {
-            "name": self.name,
-            "time_created": str(self.time_created),
-            "type": self.type,
-            "users": self.users,
-            "disabled": self.disabled,
-            "image": self.image,
-        }
 
     def is_group(self) -> bool:
         return self.type == Chat.Type.GROUP or self.type == Chat.Type.EVENT_GROUP
@@ -138,17 +143,22 @@ class Chat(models.Model):
 
         return unread_count
 
-    @property
-    def chat_admins(self):
-        return [user for user in self.users if user.get("admin")]
+    @staticmethod
+    def get_all() -> QuerySet["Chat"]:
+        """
+        getting all records with optimized selection from the database
+        """
+        return Chat.objects.prefetch_related("messages")
 
-    @property
-    def chat_users_count_limit(self) -> int:
-        return config("CHAT_USERS_COUNT_LIMIT", default=100, cast=int)
-
-    @property
-    def chat_admins_count_limit(self) -> int:
-        return config("CHAT_ADMINS_COUNT_LIMIT", default=3, cast=int)
+    def get_all_data(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "time_created": str(self.time_created),
+            "type": self.type,
+            "users": self.users,
+            "disabled": self.disabled,
+            "image": self.image,
+        }
 
     @staticmethod
     def create_user_data_before_add_to_chat(
@@ -177,19 +187,12 @@ class Chat(models.Model):
             "chat_deleted": False,
         }
         return (
-            Chat.objects.filter(users__contains=[filter_query])
+            Chat.get_all().filter(users__contains=[filter_query])
             .annotate(message_count=Count("messages"))
             .order_by(
                 "-messages__time_created", "-time_created", "-message_count", "-id"
             )
         )
-
-    @property
-    def last_message(self) -> Optional[str]:
-        message = Messsage.objects.filter(chat__id=self.id).last()
-
-        if message:
-            return message.text
 
     class Meta:
         # the name of the table in the database for this model

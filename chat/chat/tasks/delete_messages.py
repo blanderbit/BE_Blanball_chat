@@ -6,7 +6,6 @@ from kafka import KafkaConsumer
 
 from chat.exceptions import (
     COMPARED_CHAT_EXCEPTIONS,
-    NotProvidedException,
 )
 from chat.models import Messsage
 from chat.tasks.default_producer import (
@@ -17,8 +16,10 @@ from chat.utils import (
     check_user_is_chat_member,
     generate_response,
     get_message_without_error,
-    prepare_response,
     add_request_data_to_response
+)
+from chat.decorators import (
+    set_required_fields
 )
 
 # the name of the main topic that we
@@ -36,14 +37,10 @@ message_data = dict[str, Any]
 messages_objects: QuerySet[Messsage] = []
 
 
+@set_required_fields(["message_ids", "request_user_id"])
 def validate_input_data(data: message_data) -> None:
-    user_id: Optional[int] = data.get("user_id")
-    message_ids: Optional[int] = data.get("message_ids")
-
-    if not user_id:
-        raise NotProvidedException(fields=["user_id"])
-    if not message_ids or len(message_ids) == 0:
-        raise NotProvidedException(fields=["message_ids"])
+    request_user_id: int = data.get("request_user_id")
+    message_ids: list[Optional[int]] = data.get("message_ids")
 
     global message_instance
 
@@ -53,11 +50,11 @@ def validate_input_data(data: message_data) -> None:
         if message_instance:
             chat_instance = message_instance.chat.first()
 
-            if not check_user_is_chat_member(chat=chat_instance, user_id=user_id):
+            if not check_user_is_chat_member(chat=chat_instance, user_id=request_user_id):
                 return None
             if chat_instance.disabled:
                 return None
-            if user_id != message_instance.sender_id:
+            if request_user_id != message_instance.sender_id:
                 return None
             messages_objects.append(message_instance)
 
@@ -68,7 +65,7 @@ def delete_messages(*, messages: QuerySet[Messsage]) -> list[Optional[int]]:
         message_id = message_obj.id
         message_obj.delete()
         success.append(message_id)
-    return prepare_response(success)
+    return success
 
 
 def delete_messages_consumer() -> None:
@@ -97,7 +94,7 @@ def delete_messages_consumer() -> None:
                 RESPONSE_TOPIC_NAME,
                 generate_response(
                     status=RESPONSE_STATUSES["ERROR"],
-                    data=prepare_response(data=str(err)),
+                    data=str(err),
                     message_type=MESSAGE_TYPE,
                     request_data=add_request_data_to_response(data.value)
                 ),

@@ -7,7 +7,6 @@ from kafka import KafkaConsumer
 from chat.exceptions import (
     COMPARED_CHAT_EXCEPTIONS,
     InvalidDataException,
-    NotProvidedException,
 )
 from chat.models import Messsage
 from chat.tasks.default_producer import (
@@ -18,8 +17,10 @@ from chat.utils import (
     check_user_is_chat_member,
     generate_response,
     get_message_without_error,
-    prepare_response,
     add_request_data_to_response
+)
+from chat.decorators.set_required_fields import (
+    set_required_fields
 )
 
 # the name of the main topic that we
@@ -42,20 +43,14 @@ message_data = dict[str, Any]
 messages_objects: QuerySet[Messsage] = []
 
 
+@set_required_fields(["request_user_id", "message_ids", "action"])
 def validate_input_data(data: message_data) -> None:
-    user_id: Optional[int] = data.get("user_id")
-    message_ids: Optional[int] = data.get("message_ids")
-    action: Optional[str] = data.get("action")
+    request_user_id: int = data.get("request_user_id")
+    message_ids: int = data.get("message_ids")
+    action: str = data.get("action")
 
-    if not action:
-        raise NotProvidedException(fields=["action"])
     if action not in ACTION_OPTIONS:
         raise InvalidDataException(ACTION_INVALID_ERROR)
-
-    if not user_id:
-        raise NotProvidedException(fields=["user_id"])
-    if not message_ids or len(message_ids) == 0:
-        raise NotProvidedException(fields=["message_ids"])
 
     global message_instance
 
@@ -65,9 +60,9 @@ def validate_input_data(data: message_data) -> None:
         if message_instance:
             chat_instance = message_instance.chat.first()
 
-            if not check_user_is_chat_member(chat=chat_instance, user_id=user_id):
+            if not check_user_is_chat_member(chat=chat_instance, user_id=request_user_id):
                 return None
-            if user_id == message_instance.sender_id:
+            if request_user_id == message_instance.sender_id:
                 return None
             messages_objects.append(message_instance)
 
@@ -80,7 +75,7 @@ def read_or_unread_messages(*, user_id: int, action: str) -> list[Optional[int]]
         else:
             message_obj.mark_as_unread(user_id)
         success.append(message_obj.id)
-    return prepare_response(success)
+    return success
 
 
 def read_or_unread_messages_consumer() -> None:
@@ -92,7 +87,7 @@ def read_or_unread_messages_consumer() -> None:
         try:
             validate_input_data(data.value)
             response_data = read_or_unread_messages(
-                user_id=data.value["user_id"],
+                user_id=data.value["request_user_id"],
                 action=data.value["action"],
             )
             default_producer(
@@ -109,7 +104,7 @@ def read_or_unread_messages_consumer() -> None:
                 RESPONSE_TOPIC_NAME,
                 generate_response(
                     status=RESPONSE_STATUSES["ERROR"],
-                    data=prepare_response(data=str(err)),
+                    data=str(err),
                     message_type=MESSAGE_TYPE,
                     request_data=add_request_data_to_response(data.value)
                 ),

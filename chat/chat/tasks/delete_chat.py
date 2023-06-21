@@ -6,7 +6,6 @@ from kafka import KafkaConsumer
 from chat.exceptions import (
     COMPARED_CHAT_EXCEPTIONS,
     NotFoundException,
-    NotProvidedException,
     PermissionsDeniedException,
 )
 from chat.models import Chat
@@ -23,9 +22,11 @@ from chat.utils import (
     check_user_is_chat_member,
     find_user_in_chat_by_id,
     generate_response,
-    prepare_response,
     get_chat,
     add_request_data_to_response
+)
+from chat.decorators.set_required_fields import (
+    set_required_fields
 )
 
 # the name of the main topic that we
@@ -45,26 +46,22 @@ YOU_DONT_HAVE_PERMISSIONS_TO_DELETE_THIS_CHAT_ERROR: str = (
 chat_data = dict[str, Any]
 
 
+@set_required_fields(["request_user_id", ["event_id", "chat_id"]])
 def validate_input_data(data: chat_data) -> None:
-    user_id: Optional[int] = data.get("user_id")
+    request_user_id: int = data.get("request_user_id")
     chat_id: Optional[int] = data.get("chat_id")
     event_id: Optional[int] = data.get("event_id")
-
-    if not event_id and not chat_id:
-        raise NotProvidedException(fields=["event_id", "chat_id"])
-    if not user_id:
-        raise NotProvidedException(fields=["user_id"])
 
     global chat_instance
     chat_instance = get_chat(chat_id=chat_id, event_id=event_id)
 
     if chat_instance.is_group():
-        if not check_user_is_chat_admin(chat=chat_instance, user_id=user_id):
+        if not check_user_is_chat_admin(chat=chat_instance, user_id=request_user_id):
             raise PermissionsDeniedException(
                 YOU_DONT_HAVE_PERMISSIONS_TO_DELETE_THIS_CHAT_ERROR
             )
     else:
-        if not check_user_is_chat_member(chat=chat_instance, user_id=user_id):
+        if not check_user_is_chat_member(chat=chat_instance, user_id=request_user_id):
             raise NotFoundException(object="chat")
 
 
@@ -73,8 +70,8 @@ def set_chat_deleted_by_certain_user(user: dict[str, Any]) -> None:
     chat_instance.save()
 
 
-def delete_chat(*, user_id: int, chat: Chat) -> None:
-    user = find_user_in_chat_by_id(users=chat.users, user_id=user_id)
+def delete_chat(*, request_user_id: int, chat: Chat) -> None:
+    user = find_user_in_chat_by_id(users=chat.users, user_id=request_user_id)
     if chat.type == Chat.Type.PERSONAL:
         set_chat_deleted_by_certain_user(user)
 
@@ -84,14 +81,14 @@ def delete_chat(*, user_id: int, chat: Chat) -> None:
         if user["author"]:
             chat.delete()
         else:
-            remove_user_from_chat(user_id=user["user_id"], chat=chat)
+            remove_user_from_chat(user_id=user["request_user_id"], chat=chat)
 
     response_data: dict[str, Union[int, list[int]]] = {
         "users": chat.users,
         "chat_id": chat.id,
     }
 
-    return prepare_response(data=response_data, keys_to_keep=["users"])
+    return response_data
 
 
 def delete_chat_consumer() -> None:
@@ -103,7 +100,7 @@ def delete_chat_consumer() -> None:
         try:
             validate_input_data(data.value)
             response_data = delete_chat(
-                user_id=data.value.get("user_id"), chat=chat_instance
+                user_id=data.value.get("request_user_id"), chat=chat_instance
             )
             default_producer(
                 RESPONSE_TOPIC_NAME,
@@ -119,7 +116,7 @@ def delete_chat_consumer() -> None:
                 RESPONSE_TOPIC_NAME,
                 generate_response(
                     status=RESPONSE_STATUSES["ERROR"],
-                    data=prepare_response(data=str(err)),
+                    data=str(err),
                     message_type=MESSAGE_TYPE,
                     request_data=add_request_data_to_response(data.value)
                 ),

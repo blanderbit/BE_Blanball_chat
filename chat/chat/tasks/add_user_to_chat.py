@@ -5,7 +5,6 @@ from kafka import KafkaConsumer
 
 from chat.exceptions import (
     COMPARED_CHAT_EXCEPTIONS,
-    NotProvidedException,
     PermissionsDeniedException,
 )
 from chat.models import Chat
@@ -17,8 +16,10 @@ from chat.utils import (
     check_user_is_chat_member,
     generate_response,
     get_chat,
-    prepare_response,
     add_request_data_to_response,
+)
+from chat.decorators import (
+    set_required_fields
 )
 
 # the name of the main topic that we
@@ -38,15 +39,11 @@ CANT_ADD_USER_WHO_IS_ALREADY_IN_THE_CHAT_ERROR: str = (
 LIMIT_OF_USERS_REACHED_ERROR: str = "limit_of_users_{limit}_reached"
 
 
+@set_required_fields(["user_id", ["event_id", "chat_id"]])
 def validate_input_data(data: dict[str, int]) -> None:
-    user_id: Optional[int] = data.get("user_id")
+    user_id: int = data.get("user_id")
     event_id: Optional[int] = data.get("event_id")
     chat_id: Optional[int] = data.get("chat_id")
-
-    if not user_id:
-        raise NotProvidedException(fields=["user_id"])
-    if not event_id and not chat_id:
-        raise NotProvidedException(fields=["event_id", "chat_id"])
 
     global chat_instance
     chat_instance = get_chat(chat_id=chat_id, event_id=event_id)
@@ -82,7 +79,7 @@ def add_user_to_chat(user_id: int, chat: Chat) -> str:
         "new_user_id": user_id
     }
 
-    return prepare_response(data=response_data, keys_to_keep=["users"])
+    return response_data
 
 
 def add_user_to_chat_consumer() -> None:
@@ -110,7 +107,7 @@ def add_user_to_chat_consumer() -> None:
                 RESPONSE_TOPIC_NAME,
                 generate_response(
                     status=RESPONSE_STATUSES["ERROR"],
-                    data=prepare_response(data=str(err)),
+                    data=str(err),
                     message_type=MESSAGE_TYPE,
                     request_data=add_request_data_to_response(data.value)
                 ),

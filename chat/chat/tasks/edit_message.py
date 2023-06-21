@@ -7,7 +7,6 @@ from chat.exceptions import (
     COMPARED_CHAT_EXCEPTIONS,
     InvalidDataException,
     NotFoundException,
-    NotProvidedException,
     PermissionsDeniedException,
 )
 from chat.models import Chat, Messsage
@@ -19,9 +18,11 @@ from chat.utils import (
     check_user_is_chat_member,
     generate_response,
     get_message,
-    prepare_response,
     remove_unnecessary_data,
     add_request_data_to_response
+)
+from chat.decorators import (
+    set_required_fields
 )
 
 # the name of the main topic that we
@@ -47,23 +48,19 @@ message_data = dict[str, Any]
 chat_instance: Optional[Chat] = None
 
 
+@set_required_fields(["request_user_id", "message_id"])
 def validate_input_data(data: message_data) -> None:
-    user_id: Optional[int] = data.get("user_id")
-    message_id: Optional[int] = data.get("message_id")
-
-    if not user_id:
-        raise NotProvidedException(fields=["user_id"])
-    if not message_id:
-        raise NotProvidedException(fields=["message_id"])
+    request_user_id: int = data.get("request_user_id")
+    message_id: int = data.get("message_id")
 
     global message_instance
     message_instance = get_message(message_id=message_id)
     chat_instance: Chat = message_instance.chat.first()
 
-    if not check_user_is_chat_member(chat=chat_instance, user_id=user_id):
+    if not check_user_is_chat_member(chat=chat_instance, user_id=request_user_id):
         raise NotFoundException(object="chat")
 
-    if message_instance.sender_id != user_id:
+    if message_instance.sender_id != request_user_id:
         raise PermissionsDeniedException(
             YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_MESSAGE_ERROR
         )
@@ -95,7 +92,7 @@ def edit_message(*, message: Messsage, new_data: message_data) -> Optional[str]:
             "new_data": remove_unnecessary_data(message.__dict__),
         }
 
-        return prepare_response(data=response_data, keys_to_keep=["users"])
+        return response_data
 
     except Exception as _err:
         print(_err)
@@ -129,7 +126,7 @@ def edit_message_consumer() -> None:
                 RESPONSE_TOPIC_NAME,
                 generate_response(
                     status=RESPONSE_STATUSES["ERROR"],
-                    data=prepare_response(data=str(err)),
+                    data=str(err),
                     message_type=MESSAGE_TYPE,
                     request_data=add_request_data_to_response(data.value)
                 ),
