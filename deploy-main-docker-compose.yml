@@ -1,0 +1,110 @@
+version: "3.8"
+
+x-blanball-chat-api-common-prod: &blanball-chat-api-common-prod
+  env_file:
+    - .stack.env
+  entrypoint: scripts/entrypoint.sh
+  build:
+    context: .
+    dockerfile: Dockerfile
+  volumes:
+    - .:/usr/src/blanball-chat
+  networks:
+    - blaball-chat-network-prod
+    - blanball-chat-connection-network-prod
+  depends_on:
+    blanball-chat-db-prod:
+      condition: service_healthy
+    blanball-chat-redis-prod:
+      condition: service_healthy
+
+services:
+  blanball-chat-db-prod:
+    container_name: blanball-chat-db-prod
+    env_file:
+      - .stack.env
+    image: postgres:latest
+    volumes:
+      - ./db-data:/var/lib/postgresql/data
+    networks:
+      - blaball-chat-network-prod
+    healthcheck:
+      test: pg_isready -U blanball_chat -d blanball_chat
+      timeout: 5s
+      retries: 20
+
+  blanball-chat-redis-prod:
+    container_name: blanball-chat-redis-prod
+    env_file:
+      - .stack.env
+    image: redis:7.0.4-alpine
+    volumes:
+      - redis-data-prod:/usr/src/blanball-chat-redis/storage/redis/data
+    networks:
+      - blaball-chat-network-prod
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      timeout: 5s
+      retries: 20
+
+  blanball-chat-api-prod:
+    <<: *blanball-chat-api-common-prod
+    container_name: blanball-chat-api-prod
+    command: api
+    ports:
+      - 12000:8000
+
+  blanball-chat-celery-worker-prod:
+    <<: *blanball-chat-api-common-prod
+    container_name: blanball-chat-celery-worker-prod
+    command: celery-worker
+
+  blanball-chat-celery-beat-prod:
+    <<: *blanball-chat-api-common-prod
+    container_name: blanball-chat-celery-beat-prod
+    command: celery-beat
+
+  blanball-chat-kafka-prod:
+    container_name: blanball-chat-kafka-prod
+    env_file:
+      - .stack.env
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - blanball-chat-zookeeper-prod
+    ports:
+      - 9094:9092
+      - 9095:9093
+    restart: always
+    volumes:
+      - kafka-data-prod:/usr/src/blanball-chat/storage/kafka/data
+    networks:
+      - blaball-chat-network-prod
+      - blanball-chat-connection-network-prod
+
+  blanball-chat-zookeeper-prod:
+    container_name: blanball-chat-zookeeper-prod
+    env_file:
+      - .stack.env
+    image: zookeeper:latest
+    ports:
+      - 2183:2181
+    restart: always
+    volumes:
+      - zookeeper-data-prod:/usr/src/blanball-chat/storage/zookeeper/data \
+      - zookeeper-logs-data-prod:/usr/src/blanball-chat/storage/zookeeper-logs/data \
+    networks:
+      - blaball-chat-network-prod
+      - blanball-chat-connection-network-prod
+
+
+networks:
+    blaball-chat-network-prod:
+        name: blaball-chat-network-prod
+    blanball-chat-connection-network-prod:
+        name: blanball-chat-connection-network-prod
+
+volumes:
+  kafka-data-prod:
+  redis-data-prod:
+  zookeeper-data-prod:
+  zookeeper-logs-data-prod:

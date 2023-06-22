@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 from django.conf import settings
 from kafka import KafkaConsumer
@@ -91,16 +91,20 @@ def check_member_permissions(chat: Chat, user_id: int, action: str) -> None:
 
 def set_or_unset_chat_admin(*, chat: Chat, user_id: int, action: str) -> None:
     user = [user for user in chat.users if user.get("user_id") == user_id][0]
+
+    fff: str = ''
     if action == ACTION_OPTIONS["set"]:
         user["admin"] = True
+        fff = 'new_admin_id'
     else:
         user["admin"] = False
+        fff = 'removed_admin_id'
     chat.save()
 
     response_data: dict[str, Any] = {
         "users": chat.users,
         "chat_id": chat.id,
-        "new_admin_id": user_id,
+        f"{fff}": user_id,
     }
 
     return response_data

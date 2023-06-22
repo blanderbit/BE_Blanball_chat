@@ -1,0 +1,110 @@
+version: "3.8"
+
+x-blanball-chat-api-common-test: &blanball-chat-api-common-test
+  env_file:
+    - .env
+  entrypoint: scripts/entrypoint.sh
+  build:
+    context: .
+    dockerfile: Dockerfile
+  volumes:
+    - .:/usr/src/blanball-chat
+  networks:
+    - blaball-chat-network-test
+    - blanball-chat-connection-network-test
+  depends_on:
+    blanball-chat-db-test:
+      condition: service_healthy
+    blanball-chat-redis-test:
+      condition: service_healthy
+
+services:
+  blanball-chat-db-test:
+    container_name: blanball-chat-db-test
+    env_file:
+      - .env
+    image: postgres:latest
+    volumes:
+      - ./db-data:/var/lib/postgresql/data
+    networks:
+      - blaball-chat-network
+    healthcheck:
+      test: pg_isready -U blanball_chat -d blanball_chat
+      timeout: 5s
+      retries: 20
+
+  blanball-chat-redis-test:
+    container_name: blanball-chat-redis-test
+    env_file:
+      - .env
+    image: redis:7.0.4-alpine
+    volumes:
+      - redis-data-test:/usr/src/blanball-chat-redis/storage/redis/data
+    networks:
+      - blaball-chat-network-test
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      timeout: 5s
+      retries: 20
+
+  blanball-chat-api-test:
+    <<: *blanball-chat-api-common-test
+    container_name: blanball-chat-api-test
+    command: api
+    ports:
+      - 12000:8000
+
+  blanball-chat-celery-worker-test:
+    <<: *blanball-chat-api-common-test
+    container_name: blanball-chat-celery-worker-test
+    command: celery-worker
+
+  blanball-chat-celery-beat-test:
+    <<: *blanball-chat-api-common-test
+    container_name: blanball-chat-celery-beat-test
+    command: celery-beat
+
+  blanball-chat-kafka-test:
+    container_name: blanball-chat-kafka-test
+    env_file:
+      - .env
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - blanball-chat-zookeeper-test
+    ports:
+      - 49296:9092
+      - 49297:9093
+    restart: always
+    volumes:
+      - kafka-data:/usr/src/blanball-chat/storage/kafka/data
+    networks:
+      - blaball-chat-network-test
+      - blanball-chat-connection-network-test
+
+  blanball-chat-zookeeper-test:
+    container_name: blanball-chat-zookeeper-test
+    env_file:
+      - .env
+    image: zookeeper:latest
+    ports:
+      - 49298:2181
+    restart: always
+    volumes:
+      - zookeeper-data-test:/usr/src/blanball-chat/storage/zookeeper/data \
+      - zookeeper-logs-data-test:/usr/src/blanball-chat/storage/zookeeper-logs/data \
+    networks:
+      - blaball-chat-network-test
+      - blanball-chat-connection-network-test
+
+
+networks:
+    blaball-chat-network-test:
+        name: blaball-chat-network-test
+    blanball-chat-connection-network:
+        name: blanball-chat-connection-network-test
+
+volumes:
+  kafka-data-test:
+  redis-data-test:
+  zookeeper-data-test:
+  zookeeper-logs-data-test:

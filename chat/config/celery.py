@@ -13,7 +13,7 @@ celery.autodiscover_tasks()
 
 celery.conf.beat_schedule = {
     "check_chat_time_created": {
-        "task": "chat.scheduled_tasks.check_chat_time_created",
+        "task": "chat.scheduled_tasks.check_chat_time_created.check_chat_time_created",
         "schedule": crontab(minute="*/1"),
     },
 }

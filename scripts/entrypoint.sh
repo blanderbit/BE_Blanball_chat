@@ -1,7 +1,7 @@
 #!/bin/bash
 cd chat
 
-Backend()
+Api()
 {
     python manage.py makemigrations --noinput
     python manage.py migrate --noinput
@@ -24,7 +24,7 @@ CeleryBeat()
 
 case $1
 in
-    api) Backend ;;
+    api) Api ;;
     celery-worker) CeleryWorker ;;
     celery-beat) CeleryBeat ;;
     *) exit 1 ;;

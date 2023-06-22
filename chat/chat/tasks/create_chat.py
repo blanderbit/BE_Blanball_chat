@@ -64,12 +64,14 @@ def set_chat_type(data: chat_data) -> str:
 def create_chat(data: chat_data) -> Optional[chat_data]:
     users: list[Optional[int]] = data.get("users", [])
     event_id: Optional[int] = data.get("event_id")
+    chat_request_user_id: Optional[int] = data.get("chat_request_user_id")
     users.append(data["request_user_id"])
     try:
         chat: Chat = Chat.objects.create(
             name=data["name"],
             type=set_chat_type(data),
             event_id=event_id,
+            chat_request_user_id=chat_request_user_id,
             users=[
                 Chat.create_user_data_before_add_to_chat(
                     is_author=user == data["request_user_id"],

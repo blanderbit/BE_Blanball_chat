@@ -34,6 +34,9 @@ from chat.utils.generate_response import (
 from chat.utils.get_chat import (
     get_chat as get_chat,
 )
+from chat.utils.get_chat import (
+    get_request_for_chat_without_error as get_request_for_chat_without_error
+)
 from chat.utils.get_message import (
     get_message as get_message,
 )

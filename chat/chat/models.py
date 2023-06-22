@@ -180,14 +180,17 @@ class Chat(models.Model):
         }
 
     @staticmethod
-    def get_only_available_chats_for_user(user_id: int) -> QuerySet["Chat"]:
-        # TODO если поменяется связка с юзеров то нужно переделать
+    def get_only_available_chats_for_user_without_sortering(user_id: int) -> QuerySet["Chat"]:
         filter_query: dict[str, Union[int, bool]] = {
             "user_id": user_id,
             "chat_deleted": False,
         }
+        return Chat.get_all().filter(users__contains=[filter_query])
+
+    @staticmethod
+    def get_only_available_chats_for_user(user_id: int) -> QuerySet["Chat"]:
         return (
-            Chat.get_all().filter(users__contains=[filter_query])
+            Chat.get_only_available_chats_for_user_without_sortering(user_id)
             .annotate(message_count=Count("messages"))
             .order_by(
                 "-messages__time_created", "-time_created", "-message_count", "-id"
