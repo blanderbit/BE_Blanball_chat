@@ -100,7 +100,7 @@ services:
 networks:
     blaball-chat-network-test:
         name: blaball-chat-network-test
-    blanball-chat-connection-network:
+    blanball-chat-connection-network-test:
         name: blanball-chat-connection-network-test
 
 volumes:
