@@ -29,7 +29,7 @@ services:
     networks:
       - blaball-chat-network-dev
     healthcheck:
-      test: pg_isready -U blanball_chat -d blanball_chat
+      test: pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}
       timeout: 5s
       retries: 20
 

@@ -26,11 +26,11 @@ services:
       - .stack.env
     image: postgres:latest
     volumes:
-      - ./db-data:/var/lib/postgresql/data
+      - db-data-prod:/var/lib/postgresql/data
     networks:
       - blaball-chat-network-prod
     healthcheck:
-      test: pg_isready -U blanball_chat -d blanball_chat
+      test: pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}
       timeout: 5s
       retries: 20
 
@@ -105,6 +105,7 @@ networks:
         name: blanball-chat-connection-network-prod
 
 volumes:
+  db-data-prod:
   kafka-data-prod:
   redis-data-prod:
   zookeeper-data-prod:
