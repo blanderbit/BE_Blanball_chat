@@ -50,7 +50,7 @@ services:
     container_name: blanball-chat-api-test
     command: api-deploy
     ports:
-      - 12000:8000
+      - 54371:8000
 
   blanball-chat-celery-worker-test:
     <<: *blanball-chat-api-common-test
@@ -70,8 +70,8 @@ services:
     depends_on:
       - blanball-chat-zookeeper-test
     ports:
-      - 49296:9092
-      - 49297:9093
+      - 54377:9092
+      - 54378:9093
     restart: always
     volumes:
       - kafka-data-test:/usr/src/blanball-chat/storage/kafka/data
@@ -85,7 +85,7 @@ services:
       - stack.env
     image: zookeeper:latest
     ports:
-      - 49298:2181
+      - 54379:2181
     restart: always
     volumes:
       - zookeeper-data-test:/usr/src/blanball-chat/storage/zookeeper/data \
