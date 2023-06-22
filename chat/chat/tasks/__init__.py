@@ -32,7 +32,7 @@ from chat.tasks.get_chats_list import (
     get_chats_list_consumer as get_chats_list_consumer,
 )
 from chat.tasks.read_or_unread_messages import (
-    read_or_unread_messages_consumer,
+    read_or_unread_messages_consumer as read_or_unread_messages_consumer
 )
 from chat.tasks.remove_user_from_chat import (
     remove_user_from_chat_consumer as remove_user_from_chat_consumer,
