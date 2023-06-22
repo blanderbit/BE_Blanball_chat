@@ -2,7 +2,7 @@ version: "3.8"
 
 x-blanball-chat-api-common-test: &blanball-chat-api-common-test
   env_file:
-    - .env
+    - stack.env
   entrypoint: scripts/entrypoint.sh
   build:
     context: .
@@ -22,12 +22,12 @@ services:
   blanball-chat-db-test:
     container_name: blanball-chat-db-test
     env_file:
-      - .env
+      - stack.env
     image: postgres:latest
     volumes:
       - ./db-data:/var/lib/postgresql/data
     networks:
-      - blaball-chat-network
+      - blaball-chat-network-test
     healthcheck:
       test: pg_isready -U blanball_chat -d blanball_chat
       timeout: 5s
@@ -36,7 +36,7 @@ services:
   blanball-chat-redis-test:
     container_name: blanball-chat-redis-test
     env_file:
-      - .env
+      - stack.env
     image: redis:7.0.4-alpine
     volumes:
       - redis-data-test:/usr/src/blanball-chat-redis/storage/redis/data
@@ -67,7 +67,7 @@ services:
   blanball-chat-kafka-test:
     container_name: blanball-chat-kafka-test
     env_file:
-      - .env
+      - stack.env
     image: confluentinc/cp-kafka:latest
     depends_on:
       - blanball-chat-zookeeper-test
@@ -84,7 +84,7 @@ services:
   blanball-chat-zookeeper-test:
     container_name: blanball-chat-zookeeper-test
     env_file:
-      - .env
+      - stack.env
     image: zookeeper:latest
     ports:
       - 49298:2181
