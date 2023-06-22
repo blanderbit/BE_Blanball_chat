@@ -5,8 +5,6 @@ x-blanball-chat-api-common-test: &blanball-chat-api-common-test
   env_file:
     - stack.env
   entrypoint: scripts/entrypoint.sh
-  volumes:
-    - .:/usr/src/blanball-chat
   networks:
     - blaball-chat-network-test
     - blanball-chat-connection-network-test
