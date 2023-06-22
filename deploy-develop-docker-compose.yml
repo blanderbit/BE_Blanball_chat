@@ -1,12 +1,10 @@
 version: "3.8"
 
 x-blanball-chat-api-common-test: &blanball-chat-api-common-test
+  image: registry.it-flumx.com/flumx_be_blanball_chat_test:latest
   env_file:
     - stack.env
   entrypoint: scripts/entrypoint.sh
-  build:
-    context: .
-    dockerfile: Dockerfile
   volumes:
     - .:/usr/src/blanball-chat
   networks:
@@ -50,7 +48,7 @@ services:
   blanball-chat-api-test:
     <<: *blanball-chat-api-common-test
     container_name: blanball-chat-api-test
-    command: api
+    command: api-deploy
     ports:
       - 12000:8000
 

@@ -1,6 +1,7 @@
 version: "3.8"
 
 x-blanball-chat-api-common-prod: &blanball-chat-api-common-prod
+  image: registry.it-flumx.com/flumx_be_blanball_chat_prod:latest
   env_file:
     - .stack.env
   entrypoint: scripts/entrypoint.sh
@@ -50,7 +51,7 @@ services:
   blanball-chat-api-prod:
     <<: *blanball-chat-api-common-prod
     container_name: blanball-chat-api-prod
-    command: api
+    command: api-deploy
     ports:
       - 12000:8000
 

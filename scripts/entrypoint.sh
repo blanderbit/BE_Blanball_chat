@@ -1,6 +1,14 @@
 #!/bin/bash
 cd chat
 
+ApiDeploy()
+{
+    python manage.py migrate --noinput
+    python manage.py loaddata */fixtures/*.json
+    python manage.py runserver 0.0.0.0:8000 &
+    python manage.py start_consume_messages
+}
+
 Api()
 {
     python manage.py makemigrations --noinput
@@ -25,6 +33,7 @@ CeleryBeat()
 case $1
 in
     api) Api ;;
+    api-deploy) ApiDeploy;;
     celery-worker) CeleryWorker ;;
     celery-beat) CeleryBeat ;;
     *) exit 1 ;;
