@@ -1,7 +1,8 @@
 import json
-from typing import Any
 from os import path
 from pathlib import Path
+from typing import Any
+
 from decouple import Csv, config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -14,38 +15,39 @@ INSTALLED_APPS: list[str] = [
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
+    "rest_framework",
     "chat.apps.ChatConfig",
 ]
 
 MIDDLEWARE: list[str] = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django.middleware.security.SecurityMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONFL: str = 'config.urls'
+ROOT_URLCONFL: str = "config.urls"
 
 TEMPLATES: list[dict[str, Any]] = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
 ]
 
-WSGI_APPLICATION: str = 'config.wsgi.application'
+WSGI_APPLICATION: str = "config.wsgi.application"
 
 
 DATABASES: dict[str, Any] = {
@@ -107,14 +109,26 @@ DEFAULT_AUTO_FIELD: str = "django.db.models.BigAutoField"
 # if false, then in prod server mode
 DEBUG: bool = config("DEBUG", cast=bool)
 
-DEFAULT_AUTO_FIELD: str = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD: str = "django.db.models.BigAutoField"
 
 KAFKA_PRODUCER_CONFIG: dict[str, Any] = {
-    'bootstrap_servers': [config("KAFKA_PRODUCER_ADRESS", cast=str)],
-    'value_serializer': lambda v: json.dumps(v).encode('utf-8'),
+    "bootstrap_servers": [config("KAFKA_PRODUCER_ADRESS", cast=str)],
+    "value_serializer": lambda v: json.dumps(v).encode("utf-8"),
 }
 
 KAFKA_CONSUMER_CONFIG: dict[str, Any] = {
-    'bootstrap_servers': [config("KAFKA_CONSUMER_ADRESS", cast=str)],
-    'value_deserializer': lambda v: json.loads(v.decode('utf-8')),
+    "bootstrap_servers": [config("KAFKA_CONSUMER_ADRESS", cast=str)],
+    "value_deserializer": lambda v: json.loads(v.decode("utf-8")),
 }
+
+
+CELERY_BROKER_URL: str = config("CELERY_BROKER_URL", cast=str)
+CELERY_RESULT_BACKEND: str = config("CELERY_RESULT_BACKEND", cast=str)
+CELERY_TASK_SERIALIZER: str = "json"
+CELERY_RESULT_SERIALIZER: str = "json"
+CELERY_ACKS_LATE: bool = True
+CELERY_PREFETCH_MULTIPLIER: int = 1
+CELERY_ACCEPT_CONTENT: list[str] = ["application/json"]
+CELERY_TASK_RESULT_EXPIRES: int = 10 * 60
+CELERY_TASK_TIME_LIMIT: int = 8 * 60 * 60  # 8 hours
+CELERY_TASK_SOFT_TIME_LIMIT: int = 10 * 60 * 60  # 10 hours

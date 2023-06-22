@@ -1,47 +1,76 @@
 version: "3.8"
 
+x-blanball-chat-api-common-dev: &blanball-chat-api-common-dev
+  env_file:
+    - .env
+  entrypoint: scripts/entrypoint.sh
+  build:
+    context: .
+    dockerfile: Dockerfile
+  volumes:
+    - .:/usr/src/blanball-chat
+  networks:
+    - blaball-chat-network-dev
+    - blanball-chat-connection-network-dev
+  depends_on:
+    blanball-chat-db-dev:
+      condition: service_healthy
+    blanball-chat-redis-dev:
+      condition: service_healthy
+
 services:
-  blanball-chat-db:
-    container_name: blanball-chat-db
+  blanball-chat-db-dev:
+    container_name: blanball-chat-db-dev
     env_file:
       - .env
     image: postgres:latest
     volumes:
       - ./db-data:/var/lib/postgresql/data
     networks:
-      - blaball-network
-    ports:
-      - 5430:5432
+      - blaball-chat-network-dev
     healthcheck:
       test: pg_isready -U blanball_chat -d blanball_chat
       timeout: 5s
       retries: 20
 
-  blanball-chat:
-    container_name: blanball-chat
-    ports:
-      - 12000:12000
+  blanball-chat-redis-dev:
+    container_name: blanball-chat-redis-dev
     env_file:
       - .env
-    command: bash scripts/start.sh
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: redis:7.0.4-alpine
     volumes:
-      - .:/usr/src/blanball-chat
+      - redis-data:/usr/src/blanball-chat-redis/storage/redis/data
     networks:
-      - blaball-network
-    depends_on:
-      blanball-chat-db:
-        condition: service_healthy
+      - blaball-chat-network-dev
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      timeout: 5s
+      retries: 20
 
-  blanball-chat-kafka:
-    container_name: blanball-chat-kafka
+  blanball-chat-api-dev:
+    <<: *blanball-chat-api-common-dev
+    container_name: blanball-chat-api-dev
+    command: api
+    ports:
+      - 12000:8000
+
+  blanball-chat-celery-worker-dev:
+    <<: *blanball-chat-api-common-dev
+    container_name: blanball-chat-celery-worker-dev
+    command: celery-worker
+
+  blanball-chat-celery-beat-dev:
+    <<: *blanball-chat-api-common-dev
+    container_name: blanball-chat-celery-beat-dev
+    command: celery-beat
+
+  blanball-chat-kafka-dev:
+    container_name: blanball-chat-kafka-dev
     env_file:
       - .env
     image: confluentinc/cp-kafka:latest
     depends_on:
-      - blanball-chat-zookeeper
+      - blanball-chat-zookeeper-dev
     ports:
       - 9094:9092
       - 9095:9093
@@ -49,10 +78,11 @@ services:
     volumes:
       - kafka-data:/usr/src/blanball-chat/storage/kafka/data
     networks:
-      - blaball-network
+      - blaball-chat-network-dev
+      - blanball-chat-connection-network-dev
 
-  blanball-chat-zookeeper:
-    container_name: blanball-chat-zookeeper
+  blanball-chat-zookeeper-dev:
+    container_name: blanball-chat-zookeeper-dev
     env_file:
       - .env
     image: zookeeper:latest
@@ -63,14 +93,18 @@ services:
       - zookeeper-data:/usr/src/blanball-chat/storage/zookeeper/data \
       - zookeeper-logs-data:/usr/src/blanball-chat/storage/zookeeper-logs/data \
     networks:
-      - blaball-network
+      - blaball-chat-network-dev
+      - blanball-chat-connection-network-dev
+
 
 networks:
-  blaball-network:
-    external:
-      name: blaball-network
+    blaball-chat-network-dev:
+        name: blaball-chat-network-dev
+    blanball-chat-connection-network-dev:
+        name: blanball-chat-connection-network-dev
 
 volumes:
   kafka-data:
+  redis-data:
   zookeeper-data:
   zookeeper-logs-data:
