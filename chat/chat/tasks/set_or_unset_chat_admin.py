@@ -27,7 +27,7 @@ from chat.decorators import (
 
 # the name of the main topic that we
 # are listening to receive data from outside
-TOPIC_NAME: str = "set_or_unset_chat_admin_admin"
+TOPIC_NAME: str = "set_or_unset_chat_admin"
 
 # the name of the topic to which we send the answer
 RESPONSE_TOPIC_NAME: str = "set_or_unset_chat_admin_response"
@@ -39,7 +39,7 @@ CANT_SET_OR_UNSET_ADMIN_IN_DISABLED_CHAT_ERROR: str = "cant_{action}_admin_in_di
 LIMIT_OF_ADMINS_REACHED_ERROR: str = "limit_of_admins_{limit}_reached"
 ACTION_INVALID_ERROR: str = "action_invalid"
 
-MESSAGE_TYPE: str = "set_or_unset_chat_admin_admin"
+MESSAGE_TYPE: str = "set_or_unset_chat_admin"
 
 ACTION_OPTIONS: dict[str, str] = {"set": "set", "unset": "unset"}
 
@@ -92,19 +92,19 @@ def check_member_permissions(chat: Chat, user_id: int, action: str) -> None:
 def set_or_unset_chat_admin(*, chat: Chat, user_id: int, action: str) -> None:
     user = [user for user in chat.users if user.get("user_id") == user_id][0]
 
-    fff: str = ''
+    action_for_user: str = ''
     if action == ACTION_OPTIONS["set"]:
         user["admin"] = True
-        fff = 'new_admin_id'
+        action_for_user = 'new_admin_id'
     else:
         user["admin"] = False
-        fff = 'removed_admin_id'
+        action_for_user = 'removed_admin_id'
     chat.save()
 
     response_data: dict[str, Any] = {
         "users": chat.users,
         "chat_id": chat.id,
-        f"{fff}": user_id,
+        f"{action_for_user}": user_id,
     }
 
     return response_data
