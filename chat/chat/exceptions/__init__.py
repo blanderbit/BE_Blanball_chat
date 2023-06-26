@@ -15,5 +15,5 @@ COMPARED_CHAT_EXCEPTIONS = (
     NotProvidedException,
     NotFoundException,
     PermissionsDeniedException,
-    InvalidDataException,
+    InvalidDataException
 )
