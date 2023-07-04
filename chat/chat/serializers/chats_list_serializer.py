@@ -21,7 +21,6 @@ class ChatsListSerializer(ModelSerializer):
             "disabled",
             "last_message",
             "unread_messages_count",
-            "chat_request_user_id"
         ]
 
     def get_unread_messages_count(self, instance) -> Optional[int]:

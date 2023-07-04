@@ -65,6 +65,9 @@ def validate_input_data(data: message_data) -> None:
             YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_MESSAGE_ERROR
         )
 
+    if message_instance.is_system_chat_message():
+        raise PermissionsDeniedException(YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_MESSAGE_ERROR)
+
     if chat_instance.disabled:
         raise PermissionsDeniedException(CANT_EDIT_MESSAGE_IN_DISABLED_CHAT_ERROR)
 

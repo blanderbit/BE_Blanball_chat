@@ -49,7 +49,7 @@ def set_chat_type(data: chat_data) -> str:
     event_id: Optional[int] = data.get("event_id")
 
     if not type:
-        if len(chat_users) == 0 or len(chat_users) >= 2:
+        if len(chat_users) == 0 or len(chat_users) >= 2 and not data.get("user_id_for_request_chat"):
             type = Chat.Type.GROUP if not event_id else Chat.Type.EVENT_GROUP
         else:
             type = Chat.Type.PERSONAL
@@ -61,20 +61,23 @@ def set_chat_type(data: chat_data) -> str:
     return type
 
 
-def create_chat(data: chat_data) -> Optional[chat_data]:
+def create_chat(data: chat_data, return_instance: bool = False) -> Optional[chat_data]:
     users: list[Optional[int]] = data.get("users", [])
     event_id: Optional[int] = data.get("event_id")
-    chat_request_user_id: Optional[int] = data.get("chat_request_user_id")
     users.append(data["request_user_id"])
+
+    chat_type: str = set_chat_type(data)
+    chat_name: Optional[str] = data.get("name")
+
     try:
         chat: Chat = Chat.objects.create(
-            name=data["name"],
-            type=set_chat_type(data),
+            name=chat_name,
+            type=chat_type,
             event_id=event_id,
-            chat_request_user_id=chat_request_user_id,
             users=[
                 Chat.create_user_data_before_add_to_chat(
-                    is_author=user == data["request_user_id"],
+                    is_author=user == data["request_user_id"] and chat_type != Chat.Type.PERSONAL,
+                    is_chat_request=user == data.get("user_id_for_request_chat"),
                     user_id=user,
                 )
                 for user in users
@@ -93,6 +96,12 @@ def create_chat(data: chat_data) -> Optional[chat_data]:
                 "image": chat.image,
             },
         }
+
+        if return_instance:
+            response_data = {
+                "chat_instance": chat,
+                "chat_data": response_data["chat_data"]
+            }
 
         return response_data
 
