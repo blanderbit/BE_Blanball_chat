@@ -25,6 +25,9 @@ def get_request_for_chat_without_error(
     try:
         return Chat.get_only_available_chats_for_user_without_sortering(
             request_user_id
-        ).filter(chat_request_user_id=user_id_for_request_chat)[0]
+        ).filter(users__contains=[{
+            "user_id": user_id_for_request_chat,
+            "chat_request": True,
+        }])[0]
     except IndexError:
         pass

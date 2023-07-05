@@ -56,6 +56,8 @@ def validate_input_data(data: message_data) -> None:
                 return None
             if request_user_id != message_instance.sender_id:
                 return None
+            if message_instance.is_system_chat_message():
+                return None
             messages_objects.append(message_instance)
 
 

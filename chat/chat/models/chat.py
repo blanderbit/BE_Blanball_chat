@@ -10,6 +10,7 @@ from django.db import models
 from django.db.models import Count
 from django.db.models.query import QuerySet
 
+
 @final
 class Chat(models.Model):
     class Type(models.TextChoices):
@@ -17,7 +18,7 @@ class Chat(models.Model):
         GROUP: str = "Group"
         EVENT_GROUP: str = "Event_Group"
 
-    name: str = models.CharField(max_length=355, db_index=True)
+    name: str = models.CharField(max_length=355, db_index=True, null=True)
     time_created: datetime = models.DateTimeField(auto_now_add=True)
     disabled: bool = models.BooleanField(default=False)
     type: str = models.CharField(
@@ -32,9 +33,6 @@ class Chat(models.Model):
     messages: list[Optional[Messsage]] = models.ManyToManyField(
         Messsage, related_name="chat", blank=True,
         db_index=True
-    )
-    chat_request_user_id: int = models.BigIntegerField(
-        validators=[MinValueValidator(1)], null=True
     )
 
     @property
@@ -100,12 +98,13 @@ class Chat(models.Model):
     @staticmethod
     def create_user_data_before_add_to_chat(
         *,
-        is_author: bool,
+        user_id: int,
+        is_author: bool = False,
         is_disabled: bool = False,
         is_removed: bool = False,
         is_admin: bool = False,
         is_chat_deleted: bool = False,
-        user_id: int,
+        is_chat_request: bool = False,
     ) -> dict[str, Any]:
         return {
             "user_id": user_id,
@@ -114,6 +113,7 @@ class Chat(models.Model):
             "removed": is_removed,
             "admin": is_admin,
             "chat_deleted": is_chat_deleted,
+            "chat_request": is_chat_request
         }
 
     @staticmethod

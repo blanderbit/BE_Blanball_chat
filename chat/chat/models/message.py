@@ -11,12 +11,19 @@ from django.utils import timezone
 
 @final
 class Messsage(models.Model):
+    class Type(models.TextChoices):
+        USER_MESSAGE: str = "user_message"
+        USER_JOINED_TO_CHAT: str = "user_joined_to_chat"
+
     sender_id: int = models.BigIntegerField(validators=[MinValueValidator(1)])
     text: str = models.CharField(max_length=500, db_index=True)
     time_created: datetime = models.DateTimeField(auto_now_add=True)
     readed_by: bool = models.JSONField(default=list, db_index=True)
     disabled: bool = models.BooleanField(default=False)
     edited: bool = models.BooleanField(default=False)
+    type: str = models.CharField(
+        choices=Type.choices, max_length=255, default=Type.USER_MESSAGE
+    )
     reply_to: int = models.ForeignKey(
         "self", on_delete=models.SET_NULL, null=True, related_name="replies"
     )
@@ -30,6 +37,9 @@ class Messsage(models.Model):
     def is_expired_to_edit(self) -> bool:
         ten_minutes_ago = timezone.now() - timedelta(minutes=10)
         return self.time_created <= ten_minutes_ago
+
+    def is_system_chat_message(self) -> bool:
+        return not self.type == self.Type.USER_MESSAGE
 
     def mark_as_read(self, user_id: int) -> None:
         if user_id != self.sender_id:

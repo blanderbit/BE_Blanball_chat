@@ -73,12 +73,12 @@ def validate_input_data(data: message_data) -> None:
     global chat_instance
 
     if user_id_for_request_chat:
-        chat_instance = get_chat(chat_id=chat_id)
-    else:
         chat_instance = get_request_for_chat_without_error(
             user_id_for_request_chat=user_id_for_request_chat,
             request_user_id=request_user_id
         )
+    else:
+        chat_instance = get_chat(chat_id=chat_id)
 
     if chat_instance:
         if reply_to_message_id:
@@ -104,25 +104,31 @@ def prepare_data_before_create_message(*, data: message_data) -> message_data:
     return prepared_data
 
 
-def create_message(*, data: message_data) -> Optional[str]:
-    try:
+def create_message(*, data: message_data, chat: Optional[Chat]) -> Optional[str]:
+    created_chat_data: Optional[dict[str, Any]] = None
 
-        if not chat_instance:
-            create_chat(data=data)
-        prepared_data = prepare_data_before_create_message(data=data)
-        message: Messsage = chat_instance.messages.create(**prepared_data)
-
-        response_data: dict[str, Any] = {
-            "users": chat_instance.users,
-            "chat_id": chat_instance.id,
-            "message_data": message.get_all_data(),
+    if not chat:
+        new_chat_data = {
+            "request_user_id": data["request_user_id"],
+            "user_id_for_request_chat": data["user_id_for_request_chat"],
+            "users": [data["user_id_for_request_chat"]],
         }
+        created_chat_data = create_chat(data=new_chat_data, return_instance=True)
+        chat = created_chat_data.pop("chat_instance")
+        data["chat_id"] = chat.id
+    prepared_data = prepare_data_before_create_message(data=data)
+    message: Messsage = chat.messages.create(**prepared_data)
 
-        return response_data
+    response_data: dict[str, Any] = {
+        "users": chat.users,
+        "chat_id": chat.id,
+        "message_data": message.get_all_data(),
+    }
 
-    except Exception as _err:
-        print(_err)
-        raise InvalidDataException
+    if created_chat_data:
+        response_data["request_for_chat_data"] = created_chat_data["chat_data"]
+
+    return response_data
 
 
 def create_message_consumer() -> None:
@@ -135,6 +141,7 @@ def create_message_consumer() -> None:
             validate_input_data(data.value)
             response_data = create_message(
                 data=data.value,
+                chat=chat_instance
             )
             default_producer(
                 RESPONSE_TOPIC_NAME,
