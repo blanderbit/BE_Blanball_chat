@@ -40,6 +40,9 @@ from chat.tasks.remove_user_from_chat import (
 from chat.tasks.set_or_unset_chat_admin import (
     set_or_unset_chat_admin_consumer as set_or_unset_chat_admin_consumer
 )
+from chat.tasks.get_user_info_in_chat import (
+    get_user_info_in_chat_consumer as get_user_info_in_chat_consumer
+)
 
 ALL_TASKS = [
     create_chat_consumer,
@@ -56,4 +59,5 @@ ALL_TASKS = [
     delete_messages_consumer,
     get_chat_users_list_consumer,
     set_or_unset_chat_admin_consumer,
+    get_user_info_in_chat_consumer,
 ]

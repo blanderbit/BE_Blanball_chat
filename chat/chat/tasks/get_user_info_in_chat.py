@@ -7,16 +7,19 @@ from chat.exceptions import (
     COMPARED_CHAT_EXCEPTIONS,
     NotFoundException,
 )
+from chat.models import (
+    Chat
+)
 from chat.tasks.default_producer import (
     default_producer,
 )
 from chat.utils import (
     RESPONSE_STATUSES,
     check_user_in_chat,
-    custom_json_field_pagination,
     generate_response,
     add_request_data_to_response,
     get_chat,
+    find_user_in_chat_by_id,
 )
 from chat.decorators import (
     set_required_fields
@@ -24,12 +27,12 @@ from chat.decorators import (
 
 # the name of the main topic that we
 # are listening to receive data from outside
-TOPIC_NAME: str = "get_chat_users_list"
+TOPIC_NAME: str = "get_user_info_in_chat"
 
 # the name of the topic to which we send the answer
-RESPONSE_TOPIC_NAME: str = "get_chat_users_list_response"
+RESPONSE_TOPIC_NAME: str = "get_user_info_in_chat_response"
 
-MESSAGE_TYPE: str = "get_chat_users_list"
+MESSAGE_TYPE: str = "get_user_info_in_chat"
 
 
 @set_required_fields(["request_user_id", "chat_id"])
@@ -44,29 +47,23 @@ def validate_input_data(data: dict[str, int]) -> None:
         raise NotFoundException(object="chat")
 
 
-def get_chat_users_list(*, data: dict[str, int]) -> dict[str, Any]:
-    offset: int = data.get("offset", 10)
-    page: int = data.get("page", 1)
-
-    helpfull_data: dict[str, str] = {
-        "chat_users_count_limit": chat_instance.chat_users_count_limit,
-    }
-    filter_params: dict[str, bool] = {
-        "removed": False,
-        "chat_deleted": False
-    }
-
-    return custom_json_field_pagination(
-        model_instance=chat_instance,
-        page=page,
-        offset=offset,
-        field_name="users",
-        filter_params=filter_params,
-        helpfull_data=helpfull_data
+def get_user_info_in_chat(*, data: dict[str, int], chat: Chat) -> dict[str, Any]:
+    request_user = find_user_in_chat_by_id(
+        users=chat.users, user_id=data["request_user_id"]
     )
 
+    user_info: dict[str, bool] = {
+        "author": request_user["author"],
+        "disabled": request_user["disabled"],
+        "admin": request_user["admin"],
+        "chat_request": request_user["chat_request"],
+        "push_notifications": request_user["push_notifications"]
+    }
 
-def get_chat_users_list_consumer() -> None:
+    return user_info
+
+
+def get_user_info_in_chat_consumer() -> None:
     consumer: KafkaConsumer = KafkaConsumer(
         TOPIC_NAME, **settings.KAFKA_CONSUMER_CONFIG
     )
@@ -74,7 +71,10 @@ def get_chat_users_list_consumer() -> None:
     for data in consumer:
         try:
             validate_input_data(data.value)
-            response_data = get_chat_users_list(data=data.value)
+            response_data = get_user_info_in_chat(
+                data=data.value,
+                chat=chat_instance
+            )
             default_producer(
                 RESPONSE_TOPIC_NAME,
                 generate_response(

@@ -16,7 +16,8 @@ from chat.utils import (
     RESPONSE_STATUSES,
     generate_response,
     add_request_data_to_response,
-    round_date_and_time
+    round_date_and_time,
+    remove_duplicates_from_array,
 )
 from chat.decorators.set_required_fields import (
     set_required_fields
@@ -65,6 +66,7 @@ def create_chat(data: chat_data, return_instance: bool = False) -> Optional[chat
     users: list[Optional[int]] = data.get("users", [])
     event_id: Optional[int] = data.get("event_id")
     users.append(data["request_user_id"])
+    users = remove_duplicates_from_array(users)
 
     chat_type: str = set_chat_type(data)
     chat_name: Optional[str] = data.get("name")

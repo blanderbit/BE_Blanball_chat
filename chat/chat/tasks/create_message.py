@@ -19,6 +19,9 @@ from chat.tasks.default_producer import (
 from chat.tasks.create_chat import (
     create_chat
 )
+from chat.serializers import (
+    MessagesListSerializer,
+)
 from chat.utils import (
     RESPONSE_STATUSES,
     check_user_is_chat_member,
@@ -122,7 +125,7 @@ def create_message(*, data: message_data, chat: Optional[Chat]) -> Optional[str]
     response_data: dict[str, Any] = {
         "users": chat.users,
         "chat_id": chat.id,
-        "message_data": message.get_all_data(),
+        "message_data": MessagesListSerializer(message).data
     }
 
     if created_chat_data:

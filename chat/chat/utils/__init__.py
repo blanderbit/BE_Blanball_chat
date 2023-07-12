@@ -52,3 +52,6 @@ from chat.utils.add_request_data_to_response import (
 from chat.utils.round_date_and_time import (
     round_date_and_time as round_date_and_time
 )
+from chat.utils.remove_duplicates_from_array import (
+    remove_duplicates_from_array as remove_duplicates_from_array
+)

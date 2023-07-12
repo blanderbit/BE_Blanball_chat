@@ -7,19 +7,24 @@ from kafka import KafkaConsumer
 from chat.exceptions import (
     COMPARED_CHAT_EXCEPTIONS,
 )
-from chat.models import Messsage
+from chat.models import Messsage, Chat
 from chat.tasks.default_producer import (
     default_producer,
+)
+from chat.exceptions import (
+    NotFoundException
 )
 from chat.utils import (
     RESPONSE_STATUSES,
     check_user_is_chat_member,
     generate_response,
-    get_message_without_error,
-    add_request_data_to_response
+    add_request_data_to_response,
+    get_chat,
+    check_user_in_chat,
 )
 from chat.decorators import (
-    set_required_fields
+    set_required_fields,
+    clear_global_vars,
 )
 
 # the name of the main topic that we
@@ -34,40 +39,47 @@ MESSAGE_TYPE: str = "delete_messages"
 
 message_data = dict[str, Any]
 
-messages_objects: QuerySet[Messsage] = []
 
-
-@set_required_fields(["message_ids", "request_user_id"])
+@set_required_fields(["message_ids", "request_user_id", "chat_id"])
 def validate_input_data(data: message_data) -> None:
     request_user_id: int = data.get("request_user_id")
+    chat_id: int = data.get("chat_id")
     message_ids: list[Optional[int]] = data.get("message_ids")
 
-    global message_instance
+    global chat_instance
 
-    for message_id in message_ids:
-        message_instance = get_message_without_error(message_id=message_id)
+    chat_instance = get_chat(chat_id=chat_id)
 
-        if message_instance:
-            chat_instance = message_instance.chat.first()
+    if not check_user_in_chat(chat=chat_instance, user_id=request_user_id):
+        raise NotFoundException(object="chat")
 
-            if not check_user_is_chat_member(chat=chat_instance, user_id=request_user_id):
-                return None
-            if chat_instance.disabled:
-                return None
-            if request_user_id != message_instance.sender_id:
-                return None
-            if message_instance.is_system_chat_message():
-                return None
-            messages_objects.append(message_instance)
+    messages: QuerySet[Messsage] = chat_instance.messages.filter(id__in=message_ids)
+    messages_objects: list[Optional[Messsage]] = []
+
+    for message in messages:
+        if not check_user_is_chat_member(chat=chat_instance, user_id=request_user_id):
+            return None
+        if chat_instance.disabled:
+            return None
+        if request_user_id != message.sender_id:
+            return None
+        if message.is_system_chat_message():
+            return None
+        messages_objects.append(message)
+    return messages_objects
 
 
-def delete_messages(*, messages: QuerySet[Messsage]) -> list[Optional[int]]:
+@clear_global_vars(["chat_instance"])
+def delete_messages(*, messages: QuerySet[Messsage], chat: Chat) -> list[Optional[int]]:
     success: list[Optional[int]] = []
     for message_obj in messages:
         message_id = message_obj.id
         message_obj.delete()
         success.append(message_id)
-    return success
+    return {
+        "users": chat.users,
+        "messages_ids": success
+    }
 
 
 def delete_messages_consumer() -> None:
@@ -78,9 +90,10 @@ def delete_messages_consumer() -> None:
     for data in consumer:
 
         try:
-            validate_input_data(data.value)
+            messages_objects = validate_input_data(data.value)
             response_data = delete_messages(
                 messages=messages_objects,
+                chat=chat_instance
             )
             default_producer(
                 RESPONSE_TOPIC_NAME,

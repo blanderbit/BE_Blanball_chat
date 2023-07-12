@@ -29,4 +29,5 @@ class MessagesListSerializer(ModelSerializer):
             "edited",
             "readed_by",
             "reply_to",
+            "type",
         ]

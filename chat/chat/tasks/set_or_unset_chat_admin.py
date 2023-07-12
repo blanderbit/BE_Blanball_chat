@@ -33,7 +33,8 @@ TOPIC_NAME: str = "set_or_unset_chat_admin"
 RESPONSE_TOPIC_NAME: str = "set_or_unset_chat_admin_response"
 CANT_SET_OR_UNSET_ADMIN_IN_PERSONAL_CHAT_ERROR: str = "cant_{action}_admin_in_personal_chat"
 CANT_SET_OR_UNSET_ADMIN_WHO_IS_NOT_IN_THE_CHAT_ERROR: str = "cant_{action}_admin_who_not_in_the_chat"
-CANT_SET_OR_UNSET_ADMIN_WHO_IS_ALREADY_ADMIN_ERROR: str = "cant_{action}_admin_who_is_already_admin"
+CANT_SET_ADMIN_WHO_IS_ALREADY_ADMIN_ERROR: str = "cant_set_admin_who_is_already_admin"
+CANT_UNSET_ADMIN_WHO_IS_NOT_ADMIN_ERROR: str = "cant_set_admin_who_is_not_admin"
 CANT_SET_OR_UNSET_ADMIN_WHO_IS_AUTHOR_ERROR: str = "cant_{action}_admin_who_is_author"
 CANT_SET_OR_UNSET_ADMIN_IN_DISABLED_CHAT_ERROR: str = "cant_{action}_admin_in_disabled_chat"
 LIMIT_OF_ADMINS_REACHED_ERROR: str = "limit_of_admins_{limit}_reached"
@@ -69,42 +70,39 @@ def validate_input_data(data: chat_data) -> None:
     if chat_instance.type == Chat.Type.PERSONAL:
         raise PermissionsDeniedException(CANT_SET_OR_UNSET_ADMIN_IN_PERSONAL_CHAT_ERROR.format(action=action))
 
-    if len(chat_instance.chat_admins) >= chat_instance.chat_admins_count_limit:
+    if len(chat_instance.chat_admins) >= chat_instance.chat_admins_count_limit and action == ACTION_OPTIONS["set"]:
         raise PermissionsDeniedException(LIMIT_OF_ADMINS_REACHED_ERROR.format(limit=chat_instance.chat_admins_count_limit))
 
 
 def check_author_permissions(chat: Chat, request_user_id: int) -> None:
-    if not check_user_is_chat_author(chat, request_user_id):
+    if not check_user_is_chat_author(chat=chat, user_id=request_user_id):
         raise PermissionsDeniedException
 
 
 def check_member_permissions(chat: Chat, user_id: int, action: str) -> None:
-    if not check_user_is_chat_member(chat, user_id):
+    if not check_user_is_chat_member(chat=chat, user_id=user_id):
         raise PermissionsDeniedException(CANT_SET_OR_UNSET_ADMIN_WHO_IS_NOT_IN_THE_CHAT_ERROR.format(action=action))
 
-    if check_user_is_chat_author(chat, user_id):
+    if check_user_is_chat_author(chat=chat, user_id=user_id):
         raise PermissionsDeniedException(CANT_SET_OR_UNSET_ADMIN_WHO_IS_AUTHOR_ERROR.format(action=action))
 
-    if check_user_is_chat_admin(chat, user_id):
-        raise PermissionsDeniedException(CANT_SET_OR_UNSET_ADMIN_WHO_IS_ALREADY_ADMIN_ERROR.format(action=action))
+    if check_user_is_chat_admin(chat=chat, user_id=user_id) and action == ACTION_OPTIONS["set"]:
+        raise PermissionsDeniedException(CANT_SET_ADMIN_WHO_IS_ALREADY_ADMIN_ERROR)
+
+    if not check_user_is_chat_admin(chat=chat, user_id=user_id) and action == ACTION_OPTIONS["unset"]:
+        raise PermissionsDeniedException(CANT_UNSET_ADMIN_WHO_IS_NOT_ADMIN_ERROR)
 
 
 def set_or_unset_chat_admin(*, chat: Chat, user_id: int, action: str) -> None:
     user = [user for user in chat.users if user.get("user_id") == user_id][0]
-
-    action_for_user: str = ''
-    if action == ACTION_OPTIONS["set"]:
-        user["admin"] = True
-        action_for_user = 'new_admin_id'
-    else:
-        user["admin"] = False
-        action_for_user = 'removed_admin_id'
+    user["admin"] = action == ACTION_OPTIONS["set"]
     chat.save()
 
     response_data: dict[str, Any] = {
         "users": chat.users,
         "chat_id": chat.id,
-        f"{action_for_user}": user_id,
+        "action": action,
+        "user_id": user_id,
     }
 
     return response_data

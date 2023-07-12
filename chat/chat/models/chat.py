@@ -105,6 +105,7 @@ class Chat(models.Model):
         is_admin: bool = False,
         is_chat_deleted: bool = False,
         is_chat_request: bool = False,
+        is_send_push_notifications: bool = True
     ) -> dict[str, Any]:
         return {
             "user_id": user_id,
@@ -113,7 +114,8 @@ class Chat(models.Model):
             "removed": is_removed,
             "admin": is_admin,
             "chat_deleted": is_chat_deleted,
-            "chat_request": is_chat_request
+            "chat_request": is_chat_request,
+            "push_notifications": is_send_push_notifications
         }
 
     @staticmethod

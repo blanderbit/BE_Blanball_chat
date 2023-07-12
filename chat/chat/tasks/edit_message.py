@@ -81,7 +81,7 @@ def prepare_data_before_edit_message(*, data: message_data) -> message_data:
     return prepared_data
 
 
-def edit_message(*, message: Messsage, new_data: message_data) -> Optional[str]:
+def edit_message(*, message: Messsage, new_data: message_data, chat: Chat) -> Optional[str]:
     try:
         prepared_data = prepare_data_before_edit_message(data=new_data)
 
@@ -90,8 +90,8 @@ def edit_message(*, message: Messsage, new_data: message_data) -> Optional[str]:
         message.save()
 
         response_data: dict[str, Any] = {
-            "users": chat_instance.users,
-            "chat_id": chat_instance.id,
+            "users": chat.users,
+            "chat_id": chat.id,
             "new_data": remove_unnecessary_data(message.__dict__),
         }
 
@@ -114,6 +114,7 @@ def edit_message_consumer() -> None:
             response_data = edit_message(
                 message=message_instance,
                 new_data=data.value["new_data"],
+                chat=chat_instance,
             )
             default_producer(
                 RESPONSE_TOPIC_NAME,
