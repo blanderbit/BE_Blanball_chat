@@ -58,7 +58,6 @@ def validate_input_data(data: chat_data) -> None:
     if action not in ACTION_OPTIONS:
         raise InvalidDataException(ACTION_INVALID_ERROR)
 
-    global chat_instance
     chat_instance = get_chat(chat_id=chat_id)
 
     check_author_permissions(chat_instance, request_user_id)
@@ -72,6 +71,10 @@ def validate_input_data(data: chat_data) -> None:
 
     if len(chat_instance.chat_admins) >= chat_instance.chat_admins_count_limit and action == ACTION_OPTIONS["set"]:
         raise PermissionsDeniedException(LIMIT_OF_ADMINS_REACHED_ERROR.format(limit=chat_instance.chat_admins_count_limit))
+
+    return {
+        "chat_instance": chat_instance
+    }
 
 
 def check_author_permissions(chat: Chat, request_user_id: int) -> None:
@@ -115,9 +118,9 @@ def set_or_unset_chat_admin_consumer() -> None:
 
     for data in consumer:
         try:
-            validate_input_data(data.value)
+            valid_data = validate_input_data(data.value)
             response_data = set_or_unset_chat_admin(
-                chat=chat_instance,
+                chat=valid_data["chat_instance"],
                 user_id=data.value["user_id"],
                 action=data.value["action"]
             )

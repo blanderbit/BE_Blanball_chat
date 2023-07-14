@@ -13,6 +13,9 @@ from chat.serializers import (
 from chat.tasks.default_producer import (
     default_producer,
 )
+from chat.models import (
+    Chat
+)
 from chat.utils import (
     RESPONSE_STATUSES,
     check_user_in_chat,
@@ -42,19 +45,22 @@ def validate_input_data(data: chat_data) -> None:
     request_user_id: int = data.get("request_user_id")
     chat_id: int = data.get("chat_id")
 
-    global chat_instance
     chat_instance = get_chat(chat_id=chat_id)
 
     if not check_user_in_chat(chat=chat_instance, user_id=request_user_id):
         raise NotFoundException(object="chat")
 
+    return {
+        "chat_instance": chat_instance,
+    }
 
-def get_chat_messages_list(*, data: chat_data) -> dict[str, Any]:
+
+def get_chat_messages_list(*, data: chat_data, chat: Chat) -> dict[str, Any]:
     offset: int = data.get("offset", 10)
     page: int = data.get("page", 1)
     search: Optional[str] = data.get("search")
 
-    queryset = chat_instance.messages.all()
+    queryset = chat.messages.all()
 
     if search:
         queryset = queryset.filter(text__icontains=search)
@@ -74,8 +80,8 @@ def get_chat_messages_list_consumer() -> None:
 
     for data in consumer:
         try:
-            validate_input_data(data.value)
-            response_data = get_chat_messages_list(data=data.value)
+            valid_data = validate_input_data(data.value)
+            response_data = get_chat_messages_list(data=data.value, chat=valid_data["chat_instance"])
             default_producer(
                 RESPONSE_TOPIC_NAME,
                 generate_response(

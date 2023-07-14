@@ -27,7 +27,9 @@ class MessagesListSerializer(ModelSerializer):
             "text",
             "time_created",
             "edited",
+            "service",
             "readed_by",
             "reply_to",
             "type",
         ]
+

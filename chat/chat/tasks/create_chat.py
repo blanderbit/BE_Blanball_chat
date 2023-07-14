@@ -57,8 +57,6 @@ def set_chat_type(data: chat_data) -> str:
     elif type == Chat.Type.EVENT_GROUP and not event_id:
         raise NotProvidedException(fields=["event_id"])
 
-    global message_type
-    message_type = MESSAGE_TYPES[type]
     return type
 
 
@@ -90,6 +88,7 @@ def create_chat(data: chat_data, return_instance: bool = False) -> Optional[chat
         chat.save()
 
         response_data: dict[str, Any] = {
+            "message_type": MESSAGE_TYPES[chat_type],
             "users": chat.users,
             "chat_data": {
                 "id": chat.id,
@@ -121,7 +120,7 @@ def process_create_chat_request(data: chat_data) -> None:
             generate_response(
                 status=RESPONSE_STATUSES["SUCCESS"],
                 data=new_chat_data,
-                message_type=message_type,
+                message_type=new_chat_data.pop("message_type"),
                 request_data=add_request_data_to_response(data)
             ),
         )
@@ -131,7 +130,7 @@ def process_create_chat_request(data: chat_data) -> None:
             generate_response(
                 status=RESPONSE_STATUSES["ERROR"],
                 data=str(err),
-                message_type=message_type,
+                message_type=new_chat_data.pop("message_type"),
                 request_data=add_request_data_to_response(data)
             ),
         )

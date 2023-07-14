@@ -14,9 +14,10 @@ class Messsage(models.Model):
     class Type(models.TextChoices):
         USER_MESSAGE: str = "user_message"
         USER_JOINED_TO_CHAT: str = "user_joined_to_chat"
+        GROUP_CHAT_CREATED: str = "group_chat_created"
 
-    sender_id: int = models.BigIntegerField(validators=[MinValueValidator(1)])
-    text: str = models.CharField(max_length=500, db_index=True)
+    sender_id: int = models.BigIntegerField(validators=[MinValueValidator(1)], null=True)
+    text: str = models.CharField(max_length=500, db_index=True, null=True)
     time_created: datetime = models.DateTimeField(auto_now_add=True)
     readed_by: bool = models.JSONField(default=list, db_index=True)
     disabled: bool = models.BooleanField(default=False)
@@ -38,8 +39,13 @@ class Messsage(models.Model):
         ten_minutes_ago = timezone.now() - timedelta(minutes=10)
         return self.time_created <= ten_minutes_ago
 
-    def is_system_chat_message(self) -> bool:
-        return not self.type == self.Type.USER_MESSAGE
+    @property
+    def service(self) -> bool:
+        return self.type in self.SERVICE_MESSAGE_TYPES
+
+    @property
+    def SERVICE_MESSAGE_TYPES(self) -> list[str]:
+        return [self.Type.USER_JOINED_TO_CHAT, self.Type.GROUP_CHAT_CREATED]
 
     def mark_as_read(self, user_id: int) -> None:
         if user_id != self.sender_id:

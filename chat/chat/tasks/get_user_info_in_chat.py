@@ -40,11 +40,14 @@ def validate_input_data(data: dict[str, int]) -> None:
     request_user_id: int = data.get("request_user_id")
     chat_id: int = data.get("chat_id")
 
-    global chat_instance
     chat_instance = get_chat(chat_id=chat_id)
 
     if not check_user_in_chat(chat=chat_instance, user_id=request_user_id):
         raise NotFoundException(object="chat")
+
+    return {
+        "chat_instance": chat_instance
+    }
 
 
 def get_user_info_in_chat(*, data: dict[str, int], chat: Chat) -> dict[str, Any]:
@@ -53,6 +56,7 @@ def get_user_info_in_chat(*, data: dict[str, int], chat: Chat) -> dict[str, Any]
     )
 
     user_info: dict[str, bool] = {
+        "chat_id": chat.id,
         "author": request_user["author"],
         "disabled": request_user["disabled"],
         "admin": request_user["admin"],
@@ -70,10 +74,10 @@ def get_user_info_in_chat_consumer() -> None:
 
     for data in consumer:
         try:
-            validate_input_data(data.value)
+            valid_data = validate_input_data(data.value)
             response_data = get_user_info_in_chat(
                 data=data.value,
-                chat=chat_instance
+                chat=valid_data["chat_instance"]
             )
             default_producer(
                 RESPONSE_TOPIC_NAME,

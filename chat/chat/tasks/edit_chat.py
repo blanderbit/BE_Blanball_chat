@@ -50,7 +50,6 @@ def validate_input_data(data: chat_data) -> None:
     event_id: Optional[int] = data.get("event_id")
     request_user_id: Optional[int] = data.get("userequest_user_idr_id")
 
-    global chat_instance
     chat_instance = get_chat(chat_id=chat_id, event_id=event_id)
 
     if chat_instance.disabled:
@@ -63,11 +62,15 @@ def validate_input_data(data: chat_data) -> None:
                 YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_CHAT_ERROR
             )
 
+    return {
+        "chat_instance": chat_instance
+    }
+
 
 def edit_chat(*, chat: Chat, new_data: chat_data) -> Optional[str]:
     try:
         prepared_data = remove_unnecessary_data(new_data, *KEYS_IN_NEW_DATA_TO_KEEP)
-        chat.__dict__.update(prepared_data)
+        chat.__dict__.update(**prepared_data)
         chat.save()
 
         response_data: dict[str, Any] = {
@@ -90,9 +93,10 @@ def edit_chat_consumer() -> None:
 
     for data in consumer:
         try:
-            validate_input_data(data.value)
+            valid_data = validate_input_data(data.value)
             response_data = edit_chat(
-                chat=chat_instance, new_data=data.value.get("new_data")
+                chat=valid_data["chat_instance"],
+                new_data=data.value.get("new_data")
             )
             default_producer(
                 RESPONSE_TOPIC_NAME,

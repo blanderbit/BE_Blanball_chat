@@ -52,7 +52,6 @@ def validate_input_data(data: chat_data) -> None:
     chat_id: Optional[int] = data.get("chat_id")
     event_id: Optional[int] = data.get("event_id")
 
-    global chat_instance
     chat_instance = get_chat(chat_id=chat_id, event_id=event_id)
 
     if chat_instance.is_group():
@@ -64,16 +63,20 @@ def validate_input_data(data: chat_data) -> None:
         if not check_user_is_chat_member(chat=chat_instance, user_id=request_user_id):
             raise NotFoundException(object="chat")
 
+    return {
+        "chat_instance": chat_instance
+    }
 
-def set_chat_deleted_by_certain_user(user: dict[str, Any]) -> None:
+
+def set_chat_deleted_by_certain_user(*, user: dict[str, Any], chat: Chat) -> None:
     user["chat_deleted"] = True
-    chat_instance.save()
+    chat.save()
 
 
 def delete_chat(*, request_user_id: int, chat: Chat) -> None:
     user = find_user_in_chat_by_id(users=chat.users, user_id=request_user_id)
     if chat.type == Chat.Type.PERSONAL:
-        set_chat_deleted_by_certain_user(user)
+        set_chat_deleted_by_certain_user(user=user, chat=chat)
 
         if check_is_all_users_deleted_personal_chat(chat=chat):
             chat.delete()

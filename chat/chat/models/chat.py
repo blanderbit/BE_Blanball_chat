@@ -37,7 +37,9 @@ class Chat(models.Model):
 
     @property
     def chat_admins(self):
-        return [user for user in self.users if user.get("admin")]
+        return [user for user in self.users if user.get("admin") 
+                and not user.get("removed") 
+                and not user.get("chat_deleted")]
 
     @property
     def chat_users_count_limit(self) -> int:

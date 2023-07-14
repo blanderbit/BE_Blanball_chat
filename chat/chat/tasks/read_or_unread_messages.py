@@ -40,8 +40,6 @@ ACTION_OPTIONS: dict[str, str] = {"read": "read", "unread": "unread"}
 
 message_data = dict[str, Any]
 
-messages_objects: QuerySet[Messsage] = []
-
 
 @set_required_fields(["request_user_id", "message_ids", "action"])
 def validate_input_data(data: message_data) -> None:
@@ -52,7 +50,7 @@ def validate_input_data(data: message_data) -> None:
     if action not in ACTION_OPTIONS:
         raise InvalidDataException(ACTION_INVALID_ERROR)
 
-    global message_instance
+    messages_objects: list[Optional[Messsage]] = []
 
     for message_id in message_ids:
         message_instance = get_message_without_error(message_id=message_id)
@@ -65,9 +63,16 @@ def validate_input_data(data: message_data) -> None:
             if request_user_id == message_instance.sender_id:
                 return None
             messages_objects.append(message_instance)
+    return {
+        "messages_objects": message_instance
+    }
 
 
-def read_or_unread_messages(*, user_id: int, action: str) -> list[Optional[int]]:
+def read_or_unread_messages(*,
+                            user_id: int,
+                            action: str,
+                            messages_objects: list[Optional[Messsage]]
+                            ) -> list[Optional[int]]:
     success: list[Optional[int]] = []
     for message_obj in messages_objects:
         if action == ACTION_OPTIONS["read"]:
@@ -85,10 +90,11 @@ def read_or_unread_messages_consumer() -> None:
 
     for data in consumer:
         try:
-            validate_input_data(data.value)
+            valid_data = validate_input_data(data.value)
             response_data = read_or_unread_messages(
                 user_id=data.value["request_user_id"],
                 action=data.value["action"],
+                messages_objects=valid_data["messages_objects"]
             )
             default_producer(
                 RESPONSE_TOPIC_NAME,

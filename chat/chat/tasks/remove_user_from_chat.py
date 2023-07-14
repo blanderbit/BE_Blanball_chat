@@ -50,7 +50,6 @@ def validate_input_data(data: chat_data) -> None:
     event_id: Optional[int] = data.get("event_id")
     request_user_id: Optional[int] = data.get("request_user_id")
 
-    global chat_instance
     chat_instance = get_chat(chat_id=chat_id, event_id=event_id)
 
     if request_user_id:
@@ -64,6 +63,10 @@ def validate_input_data(data: chat_data) -> None:
 
     if not check_user_in_chat(chat=chat_instance, user_id=user_id):
         raise PermissionsDeniedException(CANT_REMOVE_USER_WHO_NOT_IN_THE_CHAT)
+
+    return {
+        "chat_instance": chat_instance
+    }
 
 
 def remove_user_from_chat(
@@ -79,7 +82,7 @@ def remove_user_from_chat(
         else:
             chat.users.remove(user_to_remove)
         chat.save()
-    if len(chat_instance.users) == 0:
+    if len(chat.users) == 0:
         chat.delete()
 
     response_data: dict[str, Any] = {
@@ -99,10 +102,10 @@ def remove_user_from_chat_consumer() -> None:
     for data in consumer:
 
         try:
-            validate_input_data(data.value)
+            valid_data = validate_input_data(data.value)
             response_data = remove_user_from_chat(
                 user_id=data.value.get("user_id"),
-                chat=chat_instance,
+                chat=valid_data["chat_instance"],
                 request_user_id=data.value.get("request_user_id"),
             )
             default_producer(

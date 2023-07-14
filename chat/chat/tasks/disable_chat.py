@@ -38,7 +38,6 @@ def validate_input_data(data: chat_data) -> None:
     chat_id: Optional[int] = data.get("chat_id")
     event_id: Optional[int] = data.get("event_id")
 
-    global chat_instance
     chat_instance = get_chat(chat_id=chat_id, event_id=event_id)
 
 

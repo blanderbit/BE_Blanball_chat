@@ -13,6 +13,9 @@ from chat.models import Chat, Messsage
 from chat.tasks.default_producer import (
     default_producer,
 )
+from chat.serializers import (
+    MessagesListSerializer
+)
 from chat.utils import (
     RESPONSE_STATUSES,
     check_user_is_chat_member,
@@ -45,7 +48,6 @@ MESSAGE_TYPE: str = "edit_message"
 
 
 message_data = dict[str, Any]
-chat_instance: Optional[Chat] = None
 
 
 @set_required_fields(["request_user_id", "message_id"])
@@ -53,7 +55,6 @@ def validate_input_data(data: message_data) -> None:
     request_user_id: int = data.get("request_user_id")
     message_id: int = data.get("message_id")
 
-    global message_instance
     message_instance = get_message(message_id=message_id)
     chat_instance: Chat = message_instance.chat.first()
 
@@ -65,7 +66,7 @@ def validate_input_data(data: message_data) -> None:
             YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_MESSAGE_ERROR
         )
 
-    if message_instance.is_system_chat_message():
+    if message_instance.service:
         raise PermissionsDeniedException(YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_MESSAGE_ERROR)
 
     if chat_instance.disabled:
@@ -73,6 +74,11 @@ def validate_input_data(data: message_data) -> None:
 
     if message_instance.is_expired_to_edit():
         raise PermissionsDeniedException(TIME_TO_EDIT_THE_MESSAGE_EXPIRED_ERROR)
+
+    return {
+        "message_instance": message_instance,
+        "chat_instance": chat_instance
+    }
 
 
 def prepare_data_before_edit_message(*, data: message_data) -> message_data:
@@ -85,14 +91,14 @@ def edit_message(*, message: Messsage, new_data: message_data, chat: Chat) -> Op
     try:
         prepared_data = prepare_data_before_edit_message(data=new_data)
 
-        message.__dict__.update(prepared_data)
+        message.__dict__.update(**prepared_data, edited=True)
         message.edited = True
         message.save()
 
         response_data: dict[str, Any] = {
             "users": chat.users,
             "chat_id": chat.id,
-            "new_data": remove_unnecessary_data(message.__dict__),
+            "message_data": MessagesListSerializer(message).data
         }
 
         return response_data
@@ -110,11 +116,11 @@ def edit_message_consumer() -> None:
     for data in consumer:
 
         try:
-            validate_input_data(data.value)
+            valid_data = validate_input_data(data.value)
             response_data = edit_message(
-                message=message_instance,
+                message=valid_data["message_instance"],
+                chat=valid_data["chat_instance"],
                 new_data=data.value["new_data"],
-                chat=chat_instance,
             )
             default_producer(
                 RESPONSE_TOPIC_NAME,

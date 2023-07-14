@@ -24,7 +24,6 @@ from chat.utils import (
 )
 from chat.decorators import (
     set_required_fields,
-    clear_global_vars,
 )
 
 # the name of the main topic that we
@@ -46,8 +45,6 @@ def validate_input_data(data: message_data) -> None:
     chat_id: int = data.get("chat_id")
     message_ids: list[Optional[int]] = data.get("message_ids")
 
-    global chat_instance
-
     chat_instance = get_chat(chat_id=chat_id)
 
     if not check_user_in_chat(chat=chat_instance, user_id=request_user_id):
@@ -63,13 +60,15 @@ def validate_input_data(data: message_data) -> None:
             return None
         if request_user_id != message.sender_id:
             return None
-        if message.is_system_chat_message():
+        if message.service:
             return None
         messages_objects.append(message)
-    return messages_objects
+    return {
+        "messages_objects": messages_objects,
+        "chat_instance": chat_instance
+    }
 
 
-@clear_global_vars(["chat_instance"])
 def delete_messages(*, messages: QuerySet[Messsage], chat: Chat) -> list[Optional[int]]:
     success: list[Optional[int]] = []
     for message_obj in messages:
@@ -78,6 +77,7 @@ def delete_messages(*, messages: QuerySet[Messsage], chat: Chat) -> list[Optiona
         success.append(message_id)
     return {
         "users": chat.users,
+        "chat_id": chat.id,
         "messages_ids": success
     }
 
@@ -90,10 +90,10 @@ def delete_messages_consumer() -> None:
     for data in consumer:
 
         try:
-            messages_objects = validate_input_data(data.value)
+            valid_data = validate_input_data(data.value)
             response_data = delete_messages(
-                messages=messages_objects,
-                chat=chat_instance
+                messages=valid_data["messages_objects"],
+                chat=valid_data["chat_instance"],
             )
             default_producer(
                 RESPONSE_TOPIC_NAME,

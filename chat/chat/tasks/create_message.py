@@ -55,9 +55,6 @@ MESSAGE_TYPES: dict[str, str] = {
     "c_m": "create_message"
 }
 
-MESSAGE_TYPE: str = MESSAGE_TYPES["c_m"]
-
-
 message_data = dict[str, Any]
 
 
@@ -73,7 +70,8 @@ def validate_input_data(data: message_data) -> None:
     if chat_id and user_id_for_request_chat:
         raise InvalidDataException(MUST_BE_PROVIDED_CHAT_ID_OR_USER_ID_FOR_REQUEST_CHAT_ERROR)
 
-    global chat_instance
+    chat_instance: Optional[Chat] = None
+    message_type: str = MESSAGE_TYPES["c_m"]
 
     if user_id_for_request_chat:
         chat_instance = get_request_for_chat_without_error(
@@ -94,8 +92,12 @@ def validate_input_data(data: message_data) -> None:
         if chat_instance.disabled:
             raise PermissionsDeniedException(CANT_SEND_MESSAGE_IN_DISABLED_CHAT_ERROR)
     else:
-        global MESSAGE_TYPE
-        MESSAGE_TYPE = MESSAGE_TYPES["n_r"]
+        message_type = MESSAGE_TYPES["n_r"]
+
+    return {
+        "message_type": message_type,
+        "chat_instance": chat_instance
+    }
 
 
 def prepare_data_before_create_message(*, data: message_data) -> message_data:
@@ -134,6 +136,38 @@ def create_message(*, data: message_data, chat: Optional[Chat]) -> Optional[str]
     return response_data
 
 
+def create_message(*, data: message_data, chat: Optional[Chat]) -> Optional[str]:
+    created_chat_data: Optional[dict[str, Any]] = None
+
+    if not chat:
+        new_chat_data = {
+            "request_user_id": data["request_user_id"],
+            "user_id_for_request_chat": data["user_id_for_request_chat"],
+            "users": [data["user_id_for_request_chat"]],
+        }
+        created_chat_data = create_chat(data=new_chat_data, return_instance=True)
+        chat = created_chat_data.pop("chat_instance")
+        data["chat_id"] = chat.id
+    prepared_data = prepare_data_before_create_message(data=data)
+    message: Messsage = chat.messages.create(**prepared_data)
+
+    response_data: dict[str, Any] = {
+        "users": chat.users,
+        "chat_id": chat.id,
+        "message_data": MessagesListSerializer(message).data
+    }
+
+    if created_chat_data:
+        response_data["request_for_chat_data"] = created_chat_data["chat_data"]
+
+    return response_data
+
+
+def create_service_message(*, message_data: message_data, chat: Optional[Chat]) -> Messsage:
+    message: Messsage = chat.messages.create(**message_data)
+    return message
+
+
 def create_message_consumer() -> None:
     consumer: KafkaConsumer = KafkaConsumer(
         TOPIC_NAME, **settings.KAFKA_CONSUMER_CONFIG
@@ -141,17 +175,17 @@ def create_message_consumer() -> None:
 
     for data in consumer:
         try:
-            validate_input_data(data.value)
+            valid_data = validate_input_data(data.value)
             response_data = create_message(
                 data=data.value,
-                chat=chat_instance
+                chat=valid_data["chat_instance"]
             )
             default_producer(
                 RESPONSE_TOPIC_NAME,
                 generate_response(
                     status=RESPONSE_STATUSES["SUCCESS"],
                     data=response_data,
-                    message_type=MESSAGE_TYPE,
+                    message_type=valid_data["message_type"],
                     request_data=add_request_data_to_response(data.value)
                 ),
             )
@@ -161,7 +195,7 @@ def create_message_consumer() -> None:
                 generate_response(
                     status=RESPONSE_STATUSES["ERROR"],
                     data=str(err),
-                    message_type=MESSAGE_TYPE,
+                    message_type=valid_data["message_type"],
                     request_data=add_request_data_to_response(data.value)
                 ),
             )
