@@ -101,9 +101,9 @@ def delete_chat_consumer() -> None:
 
     for data in consumer:
         try:
-            validate_input_data(data.value)
+            valid_data = validate_input_data(data.value)
             response_data = delete_chat(
-                user_id=data.value.get("request_user_id"), chat=chat_instance
+                user_id=data.value.get("request_user_id"), chat=valid_data["chat_instance"]
             )
             default_producer(
                 RESPONSE_TOPIC_NAME,

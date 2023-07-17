@@ -6,7 +6,7 @@ from kafka import KafkaConsumer
 from chat.exceptions import (
     COMPARED_CHAT_EXCEPTIONS,
     PermissionsDeniedException,
-    InvalidDataException,
+    InvalidActionException,
 )
 from chat.models import Chat
 from chat.tasks.default_producer import (
@@ -38,7 +38,6 @@ CANT_UNSET_ADMIN_WHO_IS_NOT_ADMIN_ERROR: str = "cant_set_admin_who_is_not_admin"
 CANT_SET_OR_UNSET_ADMIN_WHO_IS_AUTHOR_ERROR: str = "cant_{action}_admin_who_is_author"
 CANT_SET_OR_UNSET_ADMIN_IN_DISABLED_CHAT_ERROR: str = "cant_{action}_admin_in_disabled_chat"
 LIMIT_OF_ADMINS_REACHED_ERROR: str = "limit_of_admins_{limit}_reached"
-ACTION_INVALID_ERROR: str = "action_invalid"
 
 MESSAGE_TYPE: str = "set_or_unset_chat_admin"
 
@@ -56,7 +55,7 @@ def validate_input_data(data: chat_data) -> None:
     action: str = data.get("action")
 
     if action not in ACTION_OPTIONS:
-        raise InvalidDataException(ACTION_INVALID_ERROR)
+        raise InvalidActionException
 
     chat_instance = get_chat(chat_id=chat_id)
 

@@ -48,7 +48,7 @@ chat_data = dict[str, Any]
 def validate_input_data(data: chat_data) -> None:
     chat_id: Optional[int] = data.get("chat_id")
     event_id: Optional[int] = data.get("event_id")
-    request_user_id: Optional[int] = data.get("userequest_user_idr_id")
+    request_user_id: Optional[int] = data.get("request_user_id")
 
     chat_instance = get_chat(chat_id=chat_id, event_id=event_id)
 
@@ -76,7 +76,7 @@ def edit_chat(*, chat: Chat, new_data: chat_data) -> Optional[str]:
         response_data: dict[str, Any] = {
             "users": chat.users,
             "chat_id": chat.id,
-            "new_data": remove_unnecessary_data(chat.__dict__),
+            "new_data": remove_unnecessary_data(chat.__dict__, *KEYS_IN_NEW_DATA_TO_KEEP),
         }
 
         return response_data

@@ -6,7 +6,7 @@ from kafka import KafkaConsumer
 
 from chat.exceptions import (
     COMPARED_CHAT_EXCEPTIONS,
-    InvalidDataException,
+    InvalidActionException,
 )
 from chat.models import Messsage
 from chat.tasks.default_producer import (
@@ -30,9 +30,6 @@ TOPIC_NAME: str = "read_or_unread_messages"
 # the name of the topic to which we send the answer
 RESPONSE_TOPIC_NAME: str = "read_or_unread_messages_response"
 
-ACTION_INVALID_ERROR: str = "action_invalid"
-
-
 MESSAGE_TYPE: str = "read_or_unread_messages"
 
 ACTION_OPTIONS: dict[str, str] = {"read": "read", "unread": "unread"}
@@ -48,7 +45,7 @@ def validate_input_data(data: message_data) -> None:
     action: str = data.get("action")
 
     if action not in ACTION_OPTIONS:
-        raise InvalidDataException(ACTION_INVALID_ERROR)
+        raise InvalidActionException
 
     messages_objects: list[Optional[Messsage]] = []
 
