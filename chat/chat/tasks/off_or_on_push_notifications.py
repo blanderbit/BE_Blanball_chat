@@ -82,7 +82,7 @@ def off_or_on_push_notifications_consumer() -> None:
         try:
             valid_data = validate_input_data(data.value)
             response_data = off_or_on_push_notifications(
-                user_id=data.value, chat=valid_data["chat_instance"]
+                request_data=data.value, chat=valid_data["chat_instance"]
             )
             default_producer(
                 RESPONSE_TOPIC_NAME,

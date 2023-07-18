@@ -56,7 +56,7 @@ def validate_input_data(data: dict[str, int]) -> None:
     if check_user_is_chat_member(chat=chat_instance, user_id=user_id):
         raise PermissionsDeniedException(CANT_ADD_USER_WHO_IS_ALREADY_IN_THE_CHAT_ERROR)
 
-    if len(chat_instance.users) >= chat_instance.chat_users_count_limit:
+    if len(chat_instance.users_in_the_chat) >= chat_instance.chat_users_count_limit:
         raise PermissionsDeniedException(
             LIMIT_OF_USERS_REACHED_ERROR.format(
                 limit=chat_instance.chat_users_count_limit
@@ -92,7 +92,7 @@ def add_user_to_chat(user_id: int, chat: Chat) -> str:
 
     response_data: dict[str, Union[int, list[int]]] = {
         "chat_id": chat.id,
-        "users": chat.users,
+        "users": chat.users_in_the_chat,
         "new_user_id": user_id,
     }
 

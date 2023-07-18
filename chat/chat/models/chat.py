@@ -37,13 +37,17 @@ class Chat(models.Model):
 
     @property
     def chat_admins(self):
-        return [user for user in self.users if user.get("admin") 
-                and not user.get("removed") 
+        return [user for user in self.users if user.get("admin")
+                and not user.get("removed")
                 and not user.get("chat_deleted")]
 
     @property
     def chat_users_count_limit(self) -> int:
         return config("CHAT_USERS_COUNT_LIMIT", default=100, cast=int)
+
+    @property
+    def users_in_the_chat(self) -> list[dict[Union[bool, int]]]:
+        return [user for user in self.users if not user["removed"] and not user["chat_deleted"]]
 
     @property
     def chat_admins_count_limit(self) -> int:
@@ -56,14 +60,15 @@ class Chat(models.Model):
         if message:
             return message.text
 
+    @property
+    def is_group(self) -> bool:
+        return self.type == Chat.Type.GROUP or self.type == Chat.Type.EVENT_GROUP
+
     def __repr__(self) -> str:
         return "<Chat %s>" % self.id
 
     def __str__(self) -> str:
         return self.name
-
-    def is_group(self) -> bool:
-        return self.type == Chat.Type.GROUP or self.type == Chat.Type.EVENT_GROUP
 
     def unread_messages_count(self, user_id: int) -> int:
         filter_query: dict[str, int] = {
@@ -107,7 +112,8 @@ class Chat(models.Model):
         is_admin: bool = False,
         is_chat_deleted: bool = False,
         is_chat_request: bool = False,
-        is_send_push_notifications: bool = True
+        is_send_push_notifications: bool = True,
+        last_visble_message_id: Optional[int] = None
     ) -> dict[str, Any]:
         return {
             "user_id": user_id,
@@ -117,7 +123,8 @@ class Chat(models.Model):
             "admin": is_admin,
             "chat_deleted": is_chat_deleted,
             "chat_request": is_chat_request,
-            "push_notifications": is_send_push_notifications
+            "push_notifications": is_send_push_notifications,
+            "last_visble_message_id": last_visble_message_id
         }
 
     @staticmethod

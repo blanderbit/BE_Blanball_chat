@@ -101,7 +101,7 @@ def set_or_unset_chat_admin(*, chat: Chat, user_id: int, action: str) -> None:
     chat.save()
 
     response_data: dict[str, Any] = {
-        "users": chat.users,
+        "users": chat.users_in_the_chat,
         "chat_id": chat.id,
         "action": action,
         "user_id": user_id,

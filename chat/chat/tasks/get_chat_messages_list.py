@@ -22,7 +22,8 @@ from chat.utils import (
     custom_pagination,
     generate_response,
     get_chat,
-    add_request_data_to_response
+    add_request_data_to_response,
+    find_user_in_chat_by_id,
 )
 from chat.decorators import (
     set_required_fields
@@ -59,8 +60,15 @@ def get_chat_messages_list(*, data: chat_data, chat: Chat) -> dict[str, Any]:
     offset: int = data.get("offset", 10)
     page: int = data.get("page", 1)
     search: Optional[str] = data.get("search")
+    request_user_id: int = data.get("request_user_id")
+
+    request_user = find_user_in_chat_by_id(users=chat.users, user_id=request_user_id)
+    request_user_last_visble_message_id = request_user["last_visble_message_id"]
 
     queryset = chat.messages.all()
+
+    if request_user_last_visble_message_id:
+        queryset = queryset.filter(id__lt=request_user_last_visble_message_id)
 
     if search:
         queryset = queryset.filter(text__icontains=search)

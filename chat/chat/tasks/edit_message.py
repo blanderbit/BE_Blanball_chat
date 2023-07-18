@@ -96,7 +96,7 @@ def edit_message(*, message: Messsage, new_data: message_data, chat: Chat) -> Op
         message.save()
 
         response_data: dict[str, Any] = {
-            "users": chat.users,
+            "users": chat.users_in_the_chat,
             "chat_id": chat.id,
             "message_data": MessagesListSerializer(message).data
         }

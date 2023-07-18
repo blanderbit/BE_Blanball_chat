@@ -8,9 +8,12 @@ from chat.exceptions import (
     InvalidDataException,
     NotProvidedException,
 )
-from chat.models import Chat
+from chat.models import Chat, Messsage
 from chat.tasks.default_producer import (
     default_producer,
+)
+from chat.serializers import (
+    ServiceMessageSeralizer
 )
 from chat.utils import (
     RESPONSE_STATUSES,
@@ -87,9 +90,21 @@ def create_chat(data: chat_data, return_instance: bool = False) -> Optional[chat
         chat.time_created = round_date_and_time(chat.time_created)
         chat.save()
 
+        from chat.tasks.create_message import (
+            create_service_message
+        )
+
+        new_service_message = create_service_message(
+            message_data={
+                "type": Messsage.Type.GROUP_CHAT_CREATED,
+            },
+            chat=chat
+        )
+
         response_data: dict[str, Any] = {
             "message_type": MESSAGE_TYPES[chat_type],
             "users": chat.users,
+            "service_message": ServiceMessageSeralizer(new_service_message).data,
             "chat_data": {
                 "id": chat.id,
                 "name": chat.name,

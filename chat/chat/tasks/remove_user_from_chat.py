@@ -13,7 +13,7 @@ from chat.tasks.default_producer import (
 )
 from chat.utils import (
     RESPONSE_STATUSES,
-    check_user_in_chat,
+    check_user_is_chat_member,
     check_user_is_chat_author,
     find_user_in_chat_by_id,
     generate_response,
@@ -61,7 +61,7 @@ def validate_input_data(data: chat_data) -> None:
                 YOU_DONT_HAVE_PERMISSIONS_TO_REMOVE_USER_FROM_THIS_CHAT_ERROR
             )
 
-    if not check_user_in_chat(chat=chat_instance, user_id=user_id):
+    if not check_user_is_chat_member(chat=chat_instance, user_id=user_id):
         raise PermissionsDeniedException(CANT_REMOVE_USER_WHO_NOT_IN_THE_CHAT)
 
     return {
@@ -79,6 +79,9 @@ def remove_user_from_chat(
             chat.type == Chat.Type.GROUP or chat.type == Chat.Type.EVENT_GROUP
         ) and request_user_id:
             user_to_remove["removed"] = True
+            chat_last_message = chat.messages.last()
+            chat_last_message_id = chat_last_message.id if chat_last_message else 1
+            user_to_remove["last_visble_message_id"] = chat_last_message_id
         else:
             chat.users.remove(user_to_remove)
         chat.save()
@@ -86,7 +89,7 @@ def remove_user_from_chat(
         chat.delete()
 
     response_data: dict[str, Any] = {
-        "users": chat.users,
+        "users": chat.users_in_the_chat,
         "chat_id": chat.id,
         "removed_user_id": user_id,
     }

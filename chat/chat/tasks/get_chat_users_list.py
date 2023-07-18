@@ -15,7 +15,7 @@ from chat.models import (
 )
 from chat.utils import (
     RESPONSE_STATUSES,
-    check_user_in_chat,
+    check_user_is_chat_member,
     custom_json_field_pagination,
     generate_response,
     add_request_data_to_response,
@@ -42,7 +42,7 @@ def validate_input_data(data: dict[str, int]) -> None:
 
     chat_instance = get_chat(chat_id=chat_id)
 
-    if not check_user_in_chat(chat=chat_instance, user_id=request_user_id):
+    if not check_user_is_chat_member(chat=chat_instance, user_id=request_user_id):
         raise NotFoundException(object="chat")
 
     return {

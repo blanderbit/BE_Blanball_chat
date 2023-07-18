@@ -20,7 +20,6 @@ from chat.utils import (
     generate_response,
     add_request_data_to_response,
     get_chat,
-    check_user_in_chat,
 )
 from chat.decorators import (
     set_required_fields,
@@ -47,7 +46,7 @@ def validate_input_data(data: message_data) -> None:
 
     chat_instance = get_chat(chat_id=chat_id)
 
-    if not check_user_in_chat(chat=chat_instance, user_id=request_user_id):
+    if not check_user_is_chat_member(chat=chat_instance, user_id=request_user_id):
         raise NotFoundException(object="chat")
 
     messages: QuerySet[Messsage] = chat_instance.messages.filter(id__in=message_ids)
@@ -76,7 +75,7 @@ def delete_messages(*, messages: QuerySet[Messsage], chat: Chat) -> list[Optiona
         message_obj.delete()
         success.append(message_id)
     return {
-        "users": chat.users,
+        "users": chat.users_in_the_chat,
         "chat_id": chat.id,
         "messages_ids": success
     }

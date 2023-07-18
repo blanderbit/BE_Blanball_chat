@@ -152,7 +152,7 @@ def create_message(*, data: message_data, chat: Optional[Chat]) -> Optional[str]
     message: Messsage = chat.messages.create(**prepared_data)
 
     response_data: dict[str, Any] = {
-        "users": chat.users,
+        "users": chat.users_in_the_chat,
         "chat_id": chat.id,
         "message_data": MessagesListSerializer(message).data
     }
