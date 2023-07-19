@@ -74,7 +74,7 @@ class Chat(models.Model):
         filter_query: dict[str, int] = {
             "user_id": user_id,
         }
-        return self.messages.exclude(readed_by__contains=[filter_query]).count()
+        return self.messages.exclude(read_by__contains=[filter_query]).count()
 
     def get_all_chats_unread_messages_count_for_user(self, user_id: int) -> int:
         chats: QuerySet[Chat] = self.get_only_available_chats_for_user(user_id)

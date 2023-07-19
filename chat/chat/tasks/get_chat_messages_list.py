@@ -63,7 +63,7 @@ def get_chat_messages_list(*, data: chat_data, chat: Chat) -> dict[str, Any]:
     request_user_id: int = data.get("request_user_id")
 
     request_user = find_user_in_chat_by_id(users=chat.users, user_id=request_user_id)
-    request_user_last_visble_message_id = request_user["last_visble_message_id"]
+    request_user_last_visble_message_id = request_user.get("last_visble_message_id")
 
     queryset = chat.messages.all()
 

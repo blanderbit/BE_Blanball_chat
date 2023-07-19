@@ -19,7 +19,7 @@ class Messsage(models.Model):
     sender_id: int = models.BigIntegerField(validators=[MinValueValidator(1)], null=True)
     text: str = models.CharField(max_length=500, db_index=True, null=True)
     time_created: datetime = models.DateTimeField(auto_now_add=True)
-    readed_by: bool = models.JSONField(default=list, db_index=True)
+    read_by: bool = models.JSONField(default=list, db_index=True)
     disabled: bool = models.BooleanField(default=False)
     edited: bool = models.BooleanField(default=False)
     type: str = models.CharField(
@@ -49,17 +49,17 @@ class Messsage(models.Model):
 
     def mark_as_read(self, user_id: int) -> None:
         if user_id != self.sender_id:
-            existing_users = [user["user_id"] for user in self.readed_by]
+            existing_users = [user["user_id"] for user in self.read_by]
             if user_id not in existing_users:
-                self.readed_by.append(
-                    {"user_id": user_id, "time_when_was_readed": str(timezone.now())}
+                self.read_by.append(
+                    {"user_id": user_id, "time_when_was_read": str(timezone.now())}
                 )
                 self.save()
 
     def mark_as_unread(self, user_id: int) -> None:
         if user_id != self.sender_id:
-            self.readed_by = [
-                message for message in self.readed_by if message["user_id"] != user_id
+            self.read_by = [
+                message for message in self.read_by if message["user_id"] != user_id
             ]
             self.save()
 

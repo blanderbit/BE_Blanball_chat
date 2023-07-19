@@ -5,7 +5,7 @@ from django.db import migrations
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("chat", "0007_remove_messsage_readed_messsage_readed_by"),
+        ("chat", "0007_remove_messsage_read_messsage_read_by"),
     ]
 
     operations = [

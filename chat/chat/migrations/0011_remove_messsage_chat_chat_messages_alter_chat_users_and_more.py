@@ -27,7 +27,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AlterField(
             model_name="messsage",
-            name="readed_by",
+            name="read_by",
             field=models.JSONField(default=list),
         ),
     ]
