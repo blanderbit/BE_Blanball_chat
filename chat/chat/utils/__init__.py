@@ -1,3 +1,6 @@
+from chat.utils.add_request_data_to_response import (
+    add_request_data_to_response as add_request_data_to_response,
+)
 from chat.utils.checks_users_in_chat import (
     check_is_all_users_deleted_personal_chat as check_is_all_users_deleted_personal_chat,
 )
@@ -35,7 +38,7 @@ from chat.utils.get_chat import (
     get_chat as get_chat,
 )
 from chat.utils.get_chat import (
-    get_request_for_chat_without_error as get_request_for_chat_without_error
+    get_request_for_chat_without_error as get_request_for_chat_without_error,
 )
 from chat.utils.get_message import (
     get_message as get_message,
@@ -43,15 +46,12 @@ from chat.utils.get_message import (
 from chat.utils.get_message import (
     get_message_without_error as get_message_without_error,
 )
+from chat.utils.remove_duplicates_from_array import (
+    remove_duplicates_from_array as remove_duplicates_from_array,
+)
 from chat.utils.remove_unnecessary_data import (
     remove_unnecessary_data as remove_unnecessary_data,
 )
-from chat.utils.add_request_data_to_response import (
-    add_request_data_to_response as add_request_data_to_response
-)
 from chat.utils.round_date_and_time import (
-    round_date_and_time as round_date_and_time
-)
-from chat.utils.remove_duplicates_from_array import (
-    remove_duplicates_from_array as remove_duplicates_from_array
+    round_date_and_time as round_date_and_time,
 )

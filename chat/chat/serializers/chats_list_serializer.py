@@ -1,4 +1,4 @@
-from typing import Union, Optional
+from typing import Optional, Union
 
 from rest_framework.serializers import (
     ModelSerializer,
@@ -24,6 +24,5 @@ class ChatsListSerializer(ModelSerializer):
         ]
 
     def get_unread_messages_count(self, instance) -> Optional[int]:
-        request_user_id = self.context.get("request_user_id")
-        if request_user_id:
-            return instance.unread_messages_count(request_user_id)
+        request_user_id: int = self.context["request_user_id"]
+        return instance.unread_messages_count(request_user_id)

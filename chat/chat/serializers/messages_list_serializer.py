@@ -32,4 +32,3 @@ class MessagesListSerializer(ModelSerializer):
             "reply_to",
             "type",
         ]
-

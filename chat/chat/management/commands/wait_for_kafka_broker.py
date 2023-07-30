@@ -1,12 +1,12 @@
 from time import sleep
 
 from django.conf import settings
-from kafka import KafkaProducer
-from kafka import KafkaConsumer
-from kafka.errors import NoBrokersAvailable
-
-from django.core.management.base import BaseCommand
 from django.core.management import call_command
+from django.core.management.base import (
+    BaseCommand,
+)
+from kafka import KafkaConsumer, KafkaProducer
+from kafka.errors import NoBrokersAvailable
 
 
 class Command(BaseCommand):
@@ -40,4 +40,4 @@ class Command(BaseCommand):
                 f"Connected to Kafka broker successfully. Broker address - {broker_address}"
             )
         )
-        call_command('start_consume_messages')
+        call_command("start_consume_messages")

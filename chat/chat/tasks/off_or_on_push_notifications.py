@@ -3,10 +3,13 @@ from typing import Any
 from django.conf import settings
 from kafka import KafkaConsumer
 
+from chat.decorators.set_required_fields import (
+    set_required_fields,
+)
 from chat.exceptions import (
     COMPARED_CHAT_EXCEPTIONS,
-    NotFoundException,
     InvalidActionException,
+    NotFoundException,
 )
 from chat.models import Chat
 from chat.tasks.default_producer import (
@@ -14,14 +17,11 @@ from chat.tasks.default_producer import (
 )
 from chat.utils import (
     RESPONSE_STATUSES,
+    add_request_data_to_response,
     check_user_is_chat_member,
     find_user_in_chat_by_id,
     generate_response,
     get_chat,
-    add_request_data_to_response
-)
-from chat.decorators.set_required_fields import (
-    set_required_fields
 )
 
 # the name of the main topic that we
@@ -50,9 +50,7 @@ def validate_input_data(data: dict[str, Any]) -> None:
     if not check_user_is_chat_member(chat=chat_instance, user_id=request_user_id):
         raise NotFoundException(object="chat")
 
-    return {
-        "chat_instance": chat_instance
-    }
+    return {"chat_instance": chat_instance}
 
 
 def off_or_on_push_notifications(*, request_data: dict[str, Any], chat: Chat) -> None:
@@ -90,7 +88,7 @@ def off_or_on_push_notifications_consumer() -> None:
                     status=RESPONSE_STATUSES["SUCCESS"],
                     data=response_data,
                     message_type=MESSAGE_TYPE,
-                    request_data=add_request_data_to_response(data.value)
+                    request_data=add_request_data_to_response(data.value),
                 ),
             )
         except COMPARED_CHAT_EXCEPTIONS as err:
@@ -100,6 +98,6 @@ def off_or_on_push_notifications_consumer() -> None:
                     status=RESPONSE_STATUSES["ERROR"],
                     data=str(err),
                     message_type=MESSAGE_TYPE,
-                    request_data=add_request_data_to_response(data.value)
+                    request_data=add_request_data_to_response(data.value),
                 ),
             )

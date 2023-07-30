@@ -1,4 +1,5 @@
 from typing import Any, Optional
+
 from django.core.paginator import (
     InvalidPage,
     Paginator,
@@ -22,9 +23,7 @@ def custom_pagination(
     try:
         page_objects = paginator.page(page)
         serialized_data = serializer_class(
-            page_objects.object_list,
-            many=True,
-            context=serializer_context
+            page_objects.object_list, many=True, context=serializer_context
         ).data
 
         return {
@@ -33,14 +32,16 @@ def custom_pagination(
             "results": serialized_data,
             "helpfull_data": helpfull_data,
             "is_next_page": page_objects.has_next(),
-            "is_prev_page": page_objects.has_previous()
+            "is_prev_page": page_objects.has_previous(),
         }
 
     except InvalidPage:
         raise InvalidDataException(message="invalid_page")
 
 
-def filter_list(items: list[dict[str, Any]], filter_params: dict[str, Any]) -> list[dict[str, Any]]:
+def filter_list(
+    items: list[dict[str, Any]], filter_params: dict[str, Any]
+) -> list[dict[str, Any]]:
     filtered_items = []
     key, value = next(iter(filter_params.items()))
     for item in items:
@@ -50,7 +51,8 @@ def filter_list(items: list[dict[str, Any]], filter_params: dict[str, Any]) -> l
 
 
 def custom_json_field_pagination(
-    *, model_instance,
+    *,
+    model_instance,
     field_name: str,
     page: int = 1,
     offset: int = 10,
@@ -76,7 +78,7 @@ def custom_json_field_pagination(
             "results": page_objects.object_list,
             "helpfull_data": helpfull_data,
             "is_next_page": page_objects.has_next(),
-            "is_prev_page": page_objects.has_previous()
+            "is_prev_page": page_objects.has_previous(),
         }
 
     except InvalidPage:

@@ -3,6 +3,7 @@ from typing import Any, Optional
 from django.conf import settings
 from kafka import KafkaConsumer
 
+from chat.decorators import set_required_fields
 from chat.exceptions import (
     COMPARED_CHAT_EXCEPTIONS,
     PermissionsDeniedException,
@@ -13,15 +14,12 @@ from chat.tasks.default_producer import (
 )
 from chat.utils import (
     RESPONSE_STATUSES,
-    check_user_is_chat_member,
+    add_request_data_to_response,
     check_user_is_chat_author,
+    check_user_is_chat_member,
     find_user_in_chat_by_id,
     generate_response,
     get_chat,
-    add_request_data_to_response
-)
-from chat.decorators import (
-    set_required_fields
 )
 
 # the name of the main topic that we
@@ -64,9 +62,7 @@ def validate_input_data(data: chat_data) -> None:
     if not check_user_is_chat_member(chat=chat_instance, user_id=user_id):
         raise PermissionsDeniedException(CANT_REMOVE_USER_WHO_NOT_IN_THE_CHAT)
 
-    return {
-        "chat_instance": chat_instance
-    }
+    return {"chat_instance": chat_instance}
 
 
 def remove_user_from_chat(
@@ -103,7 +99,6 @@ def remove_user_from_chat_consumer() -> None:
     )
 
     for data in consumer:
-
         try:
             valid_data = validate_input_data(data.value)
             response_data = remove_user_from_chat(
@@ -117,7 +112,7 @@ def remove_user_from_chat_consumer() -> None:
                     status=RESPONSE_STATUSES["SUCCESS"],
                     data=response_data,
                     message_type=MESSAGE_TYPE,
-                    request_data=add_request_data_to_response(data.value)
+                    request_data=add_request_data_to_response(data.value),
                 ),
             )
         except COMPARED_CHAT_EXCEPTIONS as err:
@@ -127,6 +122,6 @@ def remove_user_from_chat_consumer() -> None:
                     status=RESPONSE_STATUSES["ERROR"],
                     data=str(err),
                     message_type=MESSAGE_TYPE,
-                    request_data=add_request_data_to_response(data.value)
+                    request_data=add_request_data_to_response(data.value),
                 ),
             )

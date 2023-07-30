@@ -3,6 +3,7 @@ from typing import Any, Optional
 from django.conf import settings
 from kafka import KafkaConsumer
 
+from chat.decorators import set_required_fields
 from chat.exceptions import (
     COMPARED_CHAT_EXCEPTIONS,
     InvalidDataException,
@@ -10,22 +11,19 @@ from chat.exceptions import (
     PermissionsDeniedException,
 )
 from chat.models import Chat, Messsage
+from chat.serializers import (
+    MessagesListSerializer,
+)
 from chat.tasks.default_producer import (
     default_producer,
 )
-from chat.serializers import (
-    MessagesListSerializer
-)
 from chat.utils import (
     RESPONSE_STATUSES,
+    add_request_data_to_response,
     check_user_is_chat_member,
     generate_response,
     get_message,
     remove_unnecessary_data,
-    add_request_data_to_response
-)
-from chat.decorators import (
-    set_required_fields
 )
 
 # the name of the main topic that we
@@ -67,7 +65,9 @@ def validate_input_data(data: message_data) -> None:
         )
 
     if message_instance.service:
-        raise PermissionsDeniedException(YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_MESSAGE_ERROR)
+        raise PermissionsDeniedException(
+            YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_MESSAGE_ERROR
+        )
 
     if chat_instance.disabled:
         raise PermissionsDeniedException(CANT_EDIT_MESSAGE_IN_DISABLED_CHAT_ERROR)
@@ -75,10 +75,7 @@ def validate_input_data(data: message_data) -> None:
     if message_instance.is_expired_to_edit():
         raise PermissionsDeniedException(TIME_TO_EDIT_THE_MESSAGE_EXPIRED_ERROR)
 
-    return {
-        "message_instance": message_instance,
-        "chat_instance": chat_instance
-    }
+    return {"message_instance": message_instance, "chat_instance": chat_instance}
 
 
 def prepare_data_before_edit_message(*, data: message_data) -> message_data:
@@ -87,7 +84,9 @@ def prepare_data_before_edit_message(*, data: message_data) -> message_data:
     return prepared_data
 
 
-def edit_message(*, message: Messsage, new_data: message_data, chat: Chat) -> Optional[str]:
+def edit_message(
+    *, message: Messsage, new_data: message_data, chat: Chat
+) -> Optional[str]:
     try:
         prepared_data = prepare_data_before_edit_message(data=new_data)
 
@@ -98,7 +97,7 @@ def edit_message(*, message: Messsage, new_data: message_data, chat: Chat) -> Op
         response_data: dict[str, Any] = {
             "users": chat.users_in_the_chat,
             "chat_id": chat.id,
-            "message_data": MessagesListSerializer(message).data
+            "message_data": MessagesListSerializer(message).data,
         }
 
         return response_data
@@ -114,7 +113,6 @@ def edit_message_consumer() -> None:
     )
 
     for data in consumer:
-
         try:
             valid_data = validate_input_data(data.value)
             response_data = edit_message(
@@ -128,7 +126,7 @@ def edit_message_consumer() -> None:
                     status=RESPONSE_STATUSES["SUCCESS"],
                     data=response_data,
                     message_type=MESSAGE_TYPE,
-                    request_data=add_request_data_to_response(data.value)
+                    request_data=add_request_data_to_response(data.value),
                 ),
             )
         except COMPARED_CHAT_EXCEPTIONS as err:
@@ -138,6 +136,6 @@ def edit_message_consumer() -> None:
                     status=RESPONSE_STATUSES["ERROR"],
                     data=str(err),
                     message_type=MESSAGE_TYPE,
-                    request_data=add_request_data_to_response(data.value)
+                    request_data=add_request_data_to_response(data.value),
                 ),
             )

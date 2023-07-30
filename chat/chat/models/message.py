@@ -16,7 +16,9 @@ class Messsage(models.Model):
         USER_JOINED_TO_CHAT: str = "user_joined_to_chat"
         GROUP_CHAT_CREATED: str = "group_chat_created"
 
-    sender_id: int = models.BigIntegerField(validators=[MinValueValidator(1)], null=True)
+    sender_id: int = models.BigIntegerField(
+        validators=[MinValueValidator(1)], null=True
+    )
     text: str = models.CharField(max_length=500, db_index=True, null=True)
     time_created: datetime = models.DateTimeField(auto_now_add=True)
     read_by: bool = models.JSONField(default=list, db_index=True)
@@ -41,11 +43,11 @@ class Messsage(models.Model):
 
     @property
     def service(self) -> bool:
-        return self.type in self.SERVICE_MESSAGE_TYPES
+        return self.type in self.SERVICE_MESSAGE_TYPES()
 
-    @property
-    def SERVICE_MESSAGE_TYPES(self) -> list[str]:
-        return [self.Type.USER_JOINED_TO_CHAT, self.Type.GROUP_CHAT_CREATED]
+    @staticmethod
+    def SERVICE_MESSAGE_TYPES() -> list[str]:
+        return [Messsage.Type.USER_JOINED_TO_CHAT, Messsage.Type.GROUP_CHAT_CREATED]
 
     def mark_as_read(self, user_id: int) -> None:
         if user_id != self.sender_id:
@@ -69,6 +71,9 @@ class Messsage(models.Model):
             "sender_id": self.sender_id,
             "text": self.text,
             "time_created": str(self.time_created),
+            "type": self.type,
+            "service": self.service,
+            "edited": self.edited,
         }
 
     @staticmethod

@@ -4,25 +4,21 @@ from django.conf import settings
 from django.db.models.query import QuerySet
 from kafka import KafkaConsumer
 
+from chat.decorators import set_required_fields
 from chat.exceptions import (
     COMPARED_CHAT_EXCEPTIONS,
+    NotFoundException,
 )
-from chat.models import Messsage, Chat
+from chat.models import Chat, Messsage
 from chat.tasks.default_producer import (
     default_producer,
 )
-from chat.exceptions import (
-    NotFoundException
-)
 from chat.utils import (
     RESPONSE_STATUSES,
+    add_request_data_to_response,
     check_user_is_chat_member,
     generate_response,
-    add_request_data_to_response,
     get_chat,
-)
-from chat.decorators import (
-    set_required_fields,
 )
 
 # the name of the main topic that we
@@ -62,10 +58,7 @@ def validate_input_data(data: message_data) -> None:
         if message.service:
             return None
         messages_objects.append(message)
-    return {
-        "messages_objects": messages_objects,
-        "chat_instance": chat_instance
-    }
+    return {"messages_objects": messages_objects, "chat_instance": chat_instance}
 
 
 def delete_messages(*, messages: QuerySet[Messsage], chat: Chat) -> list[Optional[int]]:
@@ -77,7 +70,7 @@ def delete_messages(*, messages: QuerySet[Messsage], chat: Chat) -> list[Optiona
     return {
         "users": chat.users_in_the_chat,
         "chat_id": chat.id,
-        "messages_ids": success
+        "messages_ids": success,
     }
 
 
@@ -87,7 +80,6 @@ def delete_messages_consumer() -> None:
     )
 
     for data in consumer:
-
         try:
             valid_data = validate_input_data(data.value)
             response_data = delete_messages(
@@ -100,7 +92,7 @@ def delete_messages_consumer() -> None:
                     status=RESPONSE_STATUSES["SUCCESS"],
                     data=response_data,
                     message_type=MESSAGE_TYPE,
-                    request_data=add_request_data_to_response(data.value)
+                    request_data=add_request_data_to_response(data.value),
                 ),
             )
         except COMPARED_CHAT_EXCEPTIONS as err:
@@ -110,6 +102,6 @@ def delete_messages_consumer() -> None:
                     status=RESPONSE_STATUSES["ERROR"],
                     data=str(err),
                     message_type=MESSAGE_TYPE,
-                    request_data=add_request_data_to_response(data.value)
+                    request_data=add_request_data_to_response(data.value),
                 ),
             )

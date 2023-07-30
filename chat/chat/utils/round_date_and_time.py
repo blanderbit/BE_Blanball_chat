@@ -1,5 +1,6 @@
-import pandas
 from datetime import datetime
+
+import pandas
 
 
 def round_date_and_time(datetime: datetime) -> None:

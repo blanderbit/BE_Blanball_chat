@@ -3,6 +3,7 @@ from typing import Any, Optional
 from django.conf import settings
 from kafka import KafkaConsumer
 
+from chat.decorators import set_required_fields
 from chat.exceptions import (
     COMPARED_CHAT_EXCEPTIONS,
     InvalidDataException,
@@ -15,14 +16,11 @@ from chat.tasks.default_producer import (
 )
 from chat.utils import (
     RESPONSE_STATUSES,
+    add_request_data_to_response,
     check_user_is_chat_admin,
     generate_response,
     get_chat,
     remove_unnecessary_data,
-    add_request_data_to_response
-)
-from chat.decorators import (
-    set_required_fields
 )
 
 # the name of the main topic that we
@@ -62,9 +60,7 @@ def validate_input_data(data: chat_data) -> None:
                 YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_CHAT_ERROR
             )
 
-    return {
-        "chat_instance": chat_instance
-    }
+    return {"chat_instance": chat_instance}
 
 
 def edit_chat(*, chat: Chat, new_data: chat_data) -> Optional[str]:
@@ -76,7 +72,9 @@ def edit_chat(*, chat: Chat, new_data: chat_data) -> Optional[str]:
         response_data: dict[str, Any] = {
             "users": chat.users,
             "chat_id": chat.id,
-            "new_data": remove_unnecessary_data(chat.__dict__, *KEYS_IN_NEW_DATA_TO_KEEP),
+            "new_data": remove_unnecessary_data(
+                chat.__dict__, *KEYS_IN_NEW_DATA_TO_KEEP
+            ),
         }
 
         return response_data
@@ -95,8 +93,7 @@ def edit_chat_consumer() -> None:
         try:
             valid_data = validate_input_data(data.value)
             response_data = edit_chat(
-                chat=valid_data["chat_instance"],
-                new_data=data.value.get("new_data")
+                chat=valid_data["chat_instance"], new_data=data.value.get("new_data")
             )
             default_producer(
                 RESPONSE_TOPIC_NAME,
@@ -104,7 +101,7 @@ def edit_chat_consumer() -> None:
                     status=RESPONSE_STATUSES["SUCCESS"],
                     data=response_data,
                     message_type=MESSAGE_TYPE,
-                    request_data=add_request_data_to_response(data.value)
+                    request_data=add_request_data_to_response(data.value),
                 ),
             )
         except COMPARED_CHAT_EXCEPTIONS as err:
@@ -114,6 +111,6 @@ def edit_chat_consumer() -> None:
                     status=RESPONSE_STATUSES["ERROR"],
                     data=str(err),
                     message_type=MESSAGE_TYPE,
-                    request_data=add_request_data_to_response(data.value)
+                    request_data=add_request_data_to_response(data.value),
                 ),
             )

@@ -3,29 +3,27 @@ from typing import Any, Optional, Union
 from django.conf import settings
 from kafka import KafkaConsumer
 
+from chat.decorators import set_required_fields
 from chat.exceptions import (
     COMPARED_CHAT_EXCEPTIONS,
     PermissionsDeniedException,
 )
 from chat.models import Chat, Messsage
+from chat.serializers import (
+    ServiceMessageSeralizer,
+)
+from chat.tasks.create_message import (
+    create_service_message,
+)
 from chat.tasks.default_producer import (
     default_producer,
 )
 from chat.utils import (
     RESPONSE_STATUSES,
+    add_request_data_to_response,
     check_user_is_chat_member,
     generate_response,
     get_chat,
-    add_request_data_to_response,
-)
-from chat.decorators import (
-    set_required_fields
-)
-from chat.tasks.create_message import (
-    create_service_message
-)
-from chat.serializers import (
-    ServiceMessageSeralizer
 )
 
 # the name of the main topic that we
@@ -68,9 +66,7 @@ def validate_input_data(data: dict[str, int]) -> None:
     if chat_instance.disabled:
         raise PermissionsDeniedException(CANT_ADD_USER_TO_DISABLED_CHAT_ERROR)
 
-    return {
-        "chat_instance": chat_instance
-    }
+    return {"chat_instance": chat_instance}
 
 
 def add_user_to_chat(user_id: int, chat: Chat) -> str:
@@ -84,11 +80,14 @@ def add_user_to_chat(user_id: int, chat: Chat) -> str:
     )
     chat.save()
 
-    if (chat.is_group):
-        new_service_message = create_service_message(message_data={
-            "type": Messsage.Type.USER_JOINED_TO_CHAT,
-            "sender_id": user_id
-        }, chat=chat)
+    if chat.is_group:
+        new_service_message = create_service_message(
+            message_data={
+                "type": Messsage.Type.USER_JOINED_TO_CHAT,
+                "sender_id": user_id,
+            },
+            chat=chat,
+        )
 
     response_data: dict[str, Union[int, list[int]]] = {
         "chat_id": chat.id,
@@ -96,8 +95,10 @@ def add_user_to_chat(user_id: int, chat: Chat) -> str:
         "new_user_id": user_id,
     }
 
-    if (new_service_message):
-        response_data["service_message"] = ServiceMessageSeralizer(new_service_message).data
+    if new_service_message:
+        response_data["service_message"] = ServiceMessageSeralizer(
+            new_service_message
+        ).data
 
     return response_data
 
@@ -119,7 +120,7 @@ def add_user_to_chat_consumer() -> None:
                     status=RESPONSE_STATUSES["SUCCESS"],
                     data=response_data,
                     message_type=MESSAGE_TYPE,
-                    request_data=add_request_data_to_response(data.value)
+                    request_data=add_request_data_to_response(data.value),
                 ),
             )
         except COMPARED_CHAT_EXCEPTIONS as err:
@@ -129,6 +130,6 @@ def add_user_to_chat_consumer() -> None:
                     status=RESPONSE_STATUSES["ERROR"],
                     data=str(err),
                     message_type=MESSAGE_TYPE,
-                    request_data=add_request_data_to_response(data.value)
+                    request_data=add_request_data_to_response(data.value),
                 ),
             )

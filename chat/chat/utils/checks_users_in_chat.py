@@ -1,5 +1,3 @@
-from typing import Any, Optional
-
 from chat.models import Chat
 
 

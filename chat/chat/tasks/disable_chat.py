@@ -3,6 +3,7 @@ from typing import Any, Optional, Union
 from django.conf import settings
 from kafka import KafkaConsumer
 
+from chat.decorators import set_required_fields
 from chat.exceptions import (
     COMPARED_CHAT_EXCEPTIONS,
 )
@@ -12,12 +13,9 @@ from chat.tasks.default_producer import (
 )
 from chat.utils import (
     RESPONSE_STATUSES,
+    add_request_data_to_response,
     generate_response,
     get_chat,
-    add_request_data_to_response
-)
-from chat.decorators import (
-    set_required_fields
 )
 
 # the name of the main topic that we
@@ -40,6 +38,8 @@ def validate_input_data(data: chat_data) -> None:
 
     chat_instance = get_chat(chat_id=chat_id, event_id=event_id)
 
+    return {"chat_instance": chat_instance}
+
 
 def disable_chat(*, chat: Chat) -> None:
     chat.disabled = True
@@ -60,9 +60,9 @@ def disable_chat_consumer() -> None:
 
     for data in consumer:
         try:
-            validate_input_data(data.value)
+            valid_data = validate_input_data(data.value)
             response_data = disable_chat(
-                user_id=data.value.get("user_id"), chat=chat_instance
+                user_id=data.value.get("user_id"), chat=valid_data["chat_instance"]
             )
             default_producer(
                 RESPONSE_TOPIC_NAME,
@@ -70,7 +70,7 @@ def disable_chat_consumer() -> None:
                     status=RESPONSE_STATUSES["SUCCESS"],
                     data=response_data,
                     message_type=MESSAGE_TYPE,
-                    request_data=add_request_data_to_response(data.value)
+                    request_data=add_request_data_to_response(data.value),
                 ),
             )
         except COMPARED_CHAT_EXCEPTIONS as err:
@@ -80,6 +80,6 @@ def disable_chat_consumer() -> None:
                     status=RESPONSE_STATUSES["ERROR"],
                     data=str(err),
                     message_type=MESSAGE_TYPE,
-                    request_data=add_request_data_to_response(data.value)
+                    request_data=add_request_data_to_response(data.value),
                 ),
             )
