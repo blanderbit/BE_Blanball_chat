@@ -11,11 +11,11 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RemoveField(
             model_name="messsage",
-            name="readed",
+            name="read",
         ),
         migrations.AddField(
             model_name="messsage",
-            name="readed_by",
+            name="read_by",
             field=models.JSONField(null=True),
         ),
     ]

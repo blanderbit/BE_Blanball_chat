@@ -11,7 +11,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name="messsage",
-            name="readed",
+            name="read",
             field=models.BooleanField(default=False),
         ),
     ]

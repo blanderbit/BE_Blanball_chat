@@ -3,6 +3,7 @@ from typing import Any, Optional
 from django.conf import settings
 from kafka import KafkaConsumer
 
+from chat.decorators import set_required_fields
 from chat.exceptions import (
     COMPARED_CHAT_EXCEPTIONS,
     PermissionsDeniedException,
@@ -13,15 +14,12 @@ from chat.tasks.default_producer import (
 )
 from chat.utils import (
     RESPONSE_STATUSES,
-    check_user_in_chat,
+    add_request_data_to_response,
     check_user_is_chat_author,
+    check_user_is_chat_member,
     find_user_in_chat_by_id,
     generate_response,
     get_chat,
-    add_request_data_to_response
-)
-from chat.decorators import (
-    set_required_fields
 )
 
 # the name of the main topic that we
@@ -50,7 +48,6 @@ def validate_input_data(data: chat_data) -> None:
     event_id: Optional[int] = data.get("event_id")
     request_user_id: Optional[int] = data.get("request_user_id")
 
-    global chat_instance
     chat_instance = get_chat(chat_id=chat_id, event_id=event_id)
 
     if request_user_id:
@@ -62,8 +59,10 @@ def validate_input_data(data: chat_data) -> None:
                 YOU_DONT_HAVE_PERMISSIONS_TO_REMOVE_USER_FROM_THIS_CHAT_ERROR
             )
 
-    if not check_user_in_chat(chat=chat_instance, user_id=user_id):
+    if not check_user_is_chat_member(chat=chat_instance, user_id=user_id):
         raise PermissionsDeniedException(CANT_REMOVE_USER_WHO_NOT_IN_THE_CHAT)
+
+    return {"chat_instance": chat_instance}
 
 
 def remove_user_from_chat(
@@ -76,14 +75,19 @@ def remove_user_from_chat(
             chat.type == Chat.Type.GROUP or chat.type == Chat.Type.EVENT_GROUP
         ) and request_user_id:
             user_to_remove["removed"] = True
+            chat_last_message = chat.messages.last()
+            chat_last_message_id = chat_last_message.id if chat_last_message else 0
+            user_to_remove["last_visble_message_id"] = chat_last_message_id
         else:
             chat.users.remove(user_to_remove)
         chat.save()
-    if len(chat_instance.users) == 0:
+    if len(chat.users_in_the_chat) == 0:
         chat.delete()
 
+    print(chat.users_in_the_chat.append(user_to_remove))
+
     response_data: dict[str, Any] = {
-        "users": chat.users,
+        "users": chat.users_in_the_chat.append(user_to_remove),
         "chat_id": chat.id,
         "removed_user_id": user_id,
     }
@@ -97,12 +101,11 @@ def remove_user_from_chat_consumer() -> None:
     )
 
     for data in consumer:
-
         try:
-            validate_input_data(data.value)
+            valid_data = validate_input_data(data.value)
             response_data = remove_user_from_chat(
                 user_id=data.value.get("user_id"),
-                chat=chat_instance,
+                chat=valid_data["chat_instance"],
                 request_user_id=data.value.get("request_user_id"),
             )
             default_producer(
@@ -111,7 +114,7 @@ def remove_user_from_chat_consumer() -> None:
                     status=RESPONSE_STATUSES["SUCCESS"],
                     data=response_data,
                     message_type=MESSAGE_TYPE,
-                    request_data=add_request_data_to_response(data.value)
+                    request_data=add_request_data_to_response(data.value),
                 ),
             )
         except COMPARED_CHAT_EXCEPTIONS as err:
@@ -121,6 +124,6 @@ def remove_user_from_chat_consumer() -> None:
                     status=RESPONSE_STATUSES["ERROR"],
                     data=str(err),
                     message_type=MESSAGE_TYPE,
-                    request_data=add_request_data_to_response(data.value)
+                    request_data=add_request_data_to_response(data.value),
                 ),
             )

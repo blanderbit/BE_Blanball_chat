@@ -3,23 +3,27 @@ from typing import Any, Optional
 from django.conf import settings
 from kafka import KafkaConsumer
 
+from chat.decorators.set_required_fields import (
+    set_required_fields,
+)
 from chat.exceptions import (
     COMPARED_CHAT_EXCEPTIONS,
     InvalidDataException,
     NotProvidedException,
 )
-from chat.models import Chat
+from chat.models import Chat, Messsage
+from chat.serializers import (
+    ServiceMessageSeralizer,
+)
 from chat.tasks.default_producer import (
     default_producer,
 )
 from chat.utils import (
     RESPONSE_STATUSES,
-    generate_response,
     add_request_data_to_response,
-    round_date_and_time
-)
-from chat.decorators.set_required_fields import (
-    set_required_fields
+    generate_response,
+    remove_duplicates_from_array,
+    round_date_and_time,
 )
 
 # the name of the main topic that we
@@ -32,7 +36,7 @@ RESPONSE_TOPIC_NAME: str = "create_chat_response"
 MESSAGE_TYPES: dict[str, str] = {
     Chat.Type.PERSONAL: "create_personal_chat",
     Chat.Type.GROUP: "create_group_or_event_group_chat",
-    Chat.Type.EVENT_GROUP: "create_group_or_event_group_chat"
+    Chat.Type.EVENT_GROUP: "create_group_or_event_group_chat",
 }
 
 chat_data = dict[str, Any]
@@ -49,15 +53,17 @@ def set_chat_type(data: chat_data) -> str:
     event_id: Optional[int] = data.get("event_id")
 
     if not type:
-        if len(chat_users) == 0 or len(chat_users) >= 2 and not data.get("user_id_for_request_chat"):
+        if (
+            len(chat_users) == 0
+            or len(chat_users) >= 2
+            and not data.get("user_id_for_request_chat")
+        ):
             type = Chat.Type.GROUP if not event_id else Chat.Type.EVENT_GROUP
         else:
             type = Chat.Type.PERSONAL
     elif type == Chat.Type.EVENT_GROUP and not event_id:
         raise NotProvidedException(fields=["event_id"])
 
-    global message_type
-    message_type = MESSAGE_TYPES[type]
     return type
 
 
@@ -65,6 +71,7 @@ def create_chat(data: chat_data, return_instance: bool = False) -> Optional[chat
     users: list[Optional[int]] = data.get("users", [])
     event_id: Optional[int] = data.get("event_id")
     users.append(data["request_user_id"])
+    users = remove_duplicates_from_array(users)
 
     chat_type: str = set_chat_type(data)
     chat_name: Optional[str] = data.get("name")
@@ -76,7 +83,8 @@ def create_chat(data: chat_data, return_instance: bool = False) -> Optional[chat
             event_id=event_id,
             users=[
                 Chat.create_user_data_before_add_to_chat(
-                    is_author=user == data["request_user_id"] and chat_type != Chat.Type.PERSONAL,
+                    is_author=user == data["request_user_id"]
+                    and chat_type != Chat.Type.PERSONAL,
                     is_chat_request=user == data.get("user_id_for_request_chat"),
                     user_id=user,
                 )
@@ -87,8 +95,21 @@ def create_chat(data: chat_data, return_instance: bool = False) -> Optional[chat
         chat.time_created = round_date_and_time(chat.time_created)
         chat.save()
 
+        from chat.tasks.create_message import (
+            create_service_message,
+        )
+
+        new_service_message = create_service_message(
+            message_data={
+                "type": Messsage.Type.GROUP_CHAT_CREATED,
+            },
+            chat=chat,
+        )
+
         response_data: dict[str, Any] = {
+            "message_type": MESSAGE_TYPES[chat_type],
             "users": chat.users,
+            "service_message": ServiceMessageSeralizer(new_service_message).data,
             "chat_data": {
                 "id": chat.id,
                 "name": chat.name,
@@ -100,7 +121,7 @@ def create_chat(data: chat_data, return_instance: bool = False) -> Optional[chat
         if return_instance:
             response_data = {
                 "chat_instance": chat,
-                "chat_data": response_data["chat_data"]
+                "chat_data": response_data["chat_data"],
             }
 
         return response_data
@@ -119,8 +140,8 @@ def process_create_chat_request(data: chat_data) -> None:
             generate_response(
                 status=RESPONSE_STATUSES["SUCCESS"],
                 data=new_chat_data,
-                message_type=message_type,
-                request_data=add_request_data_to_response(data)
+                message_type=new_chat_data.pop("message_type"),
+                request_data=add_request_data_to_response(data),
             ),
         )
     except COMPARED_CHAT_EXCEPTIONS as err:
@@ -129,8 +150,8 @@ def process_create_chat_request(data: chat_data) -> None:
             generate_response(
                 status=RESPONSE_STATUSES["ERROR"],
                 data=str(err),
-                message_type=message_type,
-                request_data=add_request_data_to_response(data)
+                message_type=new_chat_data.pop("message_type"),
+                request_data=add_request_data_to_response(data),
             ),
         )
 

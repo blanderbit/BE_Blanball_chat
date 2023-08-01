@@ -1,11 +1,10 @@
 from typing import Any, Optional
 
 from django.conf import settings
+from django.db.models.query import QuerySet
 from kafka import KafkaConsumer
-from django.db.models.query import (
-    QuerySet
-)
 
+from chat.decorators import set_required_fields
 from chat.exceptions import (
     COMPARED_CHAT_EXCEPTIONS,
 )
@@ -16,12 +15,9 @@ from chat.tasks.default_producer import (
 )
 from chat.utils import (
     RESPONSE_STATUSES,
+    add_request_data_to_response,
     custom_pagination,
     generate_response,
-    add_request_data_to_response
-)
-from chat.decorators import (
-    set_required_fields
 )
 
 # the name of the main topic that we
@@ -32,6 +28,12 @@ TOPIC_NAME: str = "get_chats_list"
 RESPONSE_TOPIC_NAME: str = "get_chats_list_response"
 
 MESSAGE_TYPE: str = "get_chats_list"
+
+AVILABLE_CHATS_TYPE_FILTER: dict[str, str] = {
+    "dialog": "dialog",
+    "group": "group",
+    "request": "request",
+}
 
 
 chat_data = dict[str, Any]
@@ -47,13 +49,28 @@ def get_chats_list(*, data: chat_data) -> dict[str, Any]:
     offset: int = data.get("offset", 10)
     page: int = data.get("page", 1)
     search: Optional[str] = data.get("search")
+    chats_type: Optional[str] = data.get("chats_type")
 
-    queryset: QuerySet[Chat] = Chat.get_only_available_chats_for_user(user_id=request_user_id)
+    queryset: QuerySet[Chat] = Chat.get_only_available_chats_for_user(
+        user_id=request_user_id
+    )
 
     if search:
-        queryset: QuerySet[Chat] = Chat.get_only_available_chats_for_user(user_id=request_user_id).filter(
-            name__icontains=search
-        )
+        queryset = queryset.filter(name__icontains=search)
+    if chats_type:
+        if chats_type == "dialog":
+            queryset = queryset.filter(type=Chat.Type.PERSONAL)
+        elif chats_type == "group":
+            queryset = queryset.filter(type__in=Chat.CHAT_GROUP_TYPES())
+        elif chats_type == "request":
+            queryset = queryset.filter(
+                users__contains=[
+                    {
+                        "user_id": request_user_id,
+                        "chat_request": True,
+                    }
+                ]
+            )
 
     return custom_pagination(
         queryset=queryset,
@@ -79,7 +96,7 @@ def get_chats_list_consumer() -> None:
                     status=RESPONSE_STATUSES["SUCCESS"],
                     data=response_data,
                     message_type=MESSAGE_TYPE,
-                    request_data=add_request_data_to_response(data.value)
+                    request_data=add_request_data_to_response(data.value),
                 ),
             )
         except COMPARED_CHAT_EXCEPTIONS as err:
@@ -89,6 +106,6 @@ def get_chats_list_consumer() -> None:
                     status=RESPONSE_STATUSES["ERROR"],
                     data=str(err),
                     message_type=MESSAGE_TYPE,
-                    request_data=add_request_data_to_response(data.value)
+                    request_data=add_request_data_to_response(data.value),
                 ),
             )

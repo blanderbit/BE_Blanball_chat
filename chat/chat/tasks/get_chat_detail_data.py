@@ -1,7 +1,6 @@
 from typing import Any, Optional
 
 from django.conf import settings
-from django.db.models.query import QuerySet
 from kafka import KafkaConsumer
 
 from chat.decorators import set_required_fields
@@ -9,72 +8,69 @@ from chat.exceptions import (
     COMPARED_CHAT_EXCEPTIONS,
     NotFoundException,
 )
-from chat.models import Chat, Messsage
+from chat.models import Chat
 from chat.tasks.default_producer import (
     default_producer,
 )
 from chat.utils import (
     RESPONSE_STATUSES,
     add_request_data_to_response,
-    check_user_is_chat_member,
+    check_user_in_chat,
+    find_user_in_chat_by_id,
     generate_response,
     get_chat,
 )
 
 # the name of the main topic that we
 # are listening to receive data from outside
-TOPIC_NAME: str = "delete_messages"
+TOPIC_NAME: str = "get_chat_detail_data"
 
 # the name of the topic to which we send the answer
-RESPONSE_TOPIC_NAME: str = "delete_messages_response"
+RESPONSE_TOPIC_NAME: str = "get_chat_detail_data_response"
 
-MESSAGE_TYPE: str = "delete_messages"
-
-
-message_data = dict[str, Any]
+MESSAGE_TYPE: str = "get_chat_detail_data"
 
 
-@set_required_fields(["message_ids", "request_user_id", "chat_id"])
-def validate_input_data(data: message_data) -> None:
+@set_required_fields(["request_user_id", "chat_id"])
+def validate_input_data(data: dict[str, int]) -> None:
     request_user_id: int = data.get("request_user_id")
     chat_id: int = data.get("chat_id")
-    message_ids: list[Optional[int]] = data.get("message_ids")
 
     chat_instance = get_chat(chat_id=chat_id)
 
-    if not check_user_is_chat_member(chat=chat_instance, user_id=request_user_id):
+    if not check_user_in_chat(chat=chat_instance, user_id=request_user_id):
         raise NotFoundException(object="chat")
 
-    messages: QuerySet[Messsage] = chat_instance.messages.filter(id__in=message_ids)
-    messages_objects: list[Optional[Messsage]] = []
-
-    for message in messages:
-        if not check_user_is_chat_member(chat=chat_instance, user_id=request_user_id):
-            return None
-        if chat_instance.disabled:
-            return None
-        if request_user_id != message.sender_id:
-            return None
-        if message.service:
-            return None
-        messages_objects.append(message)
-    return {"messages_objects": messages_objects, "chat_instance": chat_instance}
+    return {"chat_instance": chat_instance}
 
 
-def delete_messages(*, messages: QuerySet[Messsage], chat: Chat) -> list[Optional[int]]:
-    success: list[Optional[int]] = []
-    for message_obj in messages:
-        message_id = message_obj.id
-        message_obj.delete()
-        success.append(message_id)
-    return {
-        "users": chat.users_in_the_chat,
-        "chat_id": chat.id,
-        "messages_ids": success,
+def get_chat_detail_data(*, data: dict[str, int], chat: Chat) -> dict[str, Any]:
+    request_user = find_user_in_chat_by_id(
+        users=chat.users, user_id=data["request_user_id"]
+    )
+
+    chat_data: dict[str, bool] = {
+        "chat_data": {
+            "id": chat.id,
+            "name": chat.name,
+            "image": chat.image,
+            "disabled": chat.disabled,
+            "type": chat.type,
+        },
+        "request_user_data": {
+            "author": request_user["author"],
+            "disabled": request_user["disabled"],
+            "removed": request_user["removed"],
+            "admin": request_user["admin"],
+            "chat_request": request_user["chat_request"],
+            "push_notifications": request_user["push_notifications"],
+        },
     }
 
+    return chat_data
 
-def delete_messages_consumer() -> None:
+
+def get_chat_detail_data_consumer() -> None:
     consumer: KafkaConsumer = KafkaConsumer(
         TOPIC_NAME, **settings.KAFKA_CONSUMER_CONFIG
     )
@@ -82,9 +78,8 @@ def delete_messages_consumer() -> None:
     for data in consumer:
         try:
             valid_data = validate_input_data(data.value)
-            response_data = delete_messages(
-                messages=valid_data["messages_objects"],
-                chat=valid_data["chat_instance"],
+            response_data = get_chat_detail_data(
+                data=data.value, chat=valid_data["chat_instance"]
             )
             default_producer(
                 RESPONSE_TOPIC_NAME,

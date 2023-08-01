@@ -1,4 +1,7 @@
 from chat.exceptions.invalid_data_exception import (
+    InvalidActionException as InvalidActionException,
+)
+from chat.exceptions.invalid_data_exception import (
     InvalidDataException as InvalidDataException,
 )
 from chat.exceptions.not_found_exception import (
@@ -15,5 +18,6 @@ COMPARED_CHAT_EXCEPTIONS = (
     NotProvidedException,
     NotFoundException,
     PermissionsDeniedException,
-    InvalidDataException
+    InvalidDataException,
+    InvalidActionException,
 )

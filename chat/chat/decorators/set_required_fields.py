@@ -1,6 +1,5 @@
-from chat.exceptions import (
-    NotProvidedException
-)
+from chat.exceptions import NotProvidedException
+
 
 def set_required_fields(required_fields: list[str]):
     def decorator(func):
@@ -16,5 +15,7 @@ def set_required_fields(required_fields: list[str]):
                 if not has_at_least_one:
                     raise NotProvidedException(fields=fields)
             return func(data)
+
         return wrapper
+
     return decorator
