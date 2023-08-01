@@ -20,6 +20,7 @@ class ChatsListSerializer(ModelSerializer):
             "image",
             "disabled",
             "last_message",
+            "is_group",
             "unread_messages_count",
         ]
 

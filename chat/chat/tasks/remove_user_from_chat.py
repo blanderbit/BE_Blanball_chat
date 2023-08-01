@@ -76,16 +76,18 @@ def remove_user_from_chat(
         ) and request_user_id:
             user_to_remove["removed"] = True
             chat_last_message = chat.messages.last()
-            chat_last_message_id = chat_last_message.id if chat_last_message else 1
+            chat_last_message_id = chat_last_message.id if chat_last_message else 0
             user_to_remove["last_visble_message_id"] = chat_last_message_id
         else:
             chat.users.remove(user_to_remove)
         chat.save()
-    if len(chat.users) == 0:
+    if len(chat.users_in_the_chat) == 0:
         chat.delete()
 
+    print(chat.users_in_the_chat.append(user_to_remove))
+
     response_data: dict[str, Any] = {
-        "users": chat.users_in_the_chat,
+        "users": chat.users_in_the_chat.append(user_to_remove),
         "chat_id": chat.id,
         "removed_user_id": user_id,
     }
