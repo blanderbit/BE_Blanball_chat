@@ -1,11 +1,7 @@
 from typing import Any, Optional
 
-from django.conf import settings
-from kafka import KafkaConsumer
-
 from chat.decorators import set_required_fields
 from chat.exceptions import (
-    COMPARED_CHAT_EXCEPTIONS,
     InvalidDataException,
     NotFoundException,
     PermissionsDeniedException,
@@ -14,14 +10,8 @@ from chat.models import Chat, Messsage
 from chat.serializers import (
     MessagesListSerializer,
 )
-from chat.tasks.default_producer import (
-    default_producer,
-)
 from chat.utils import (
-    RESPONSE_STATUSES,
-    add_request_data_to_response,
     check_user_is_chat_member,
-    generate_response,
     get_message,
     remove_unnecessary_data,
 )
@@ -29,9 +19,6 @@ from chat.utils import (
 # the name of the main topic that we
 # are listening to receive data from outside
 TOPIC_NAME: str = "edit_message"
-
-# the name of the topic to which we send the answer
-RESPONSE_TOPIC_NAME: str = "edit_message_response"
 
 CANT_EDIT_MESSAGE_IN_DISABLED_CHAT_ERROR: str = "cant_edit_message_in_disabled_chat"
 TIME_TO_EDIT_THE_MESSAGE_EXPIRED_ERROR: str = "time_to_edit_the_message_expired"
@@ -75,7 +62,7 @@ def validate_input_data(data: message_data) -> None:
     if message_instance.is_expired_to_edit():
         raise PermissionsDeniedException(TIME_TO_EDIT_THE_MESSAGE_EXPIRED_ERROR)
 
-    return {"message_instance": message_instance, "chat_instance": chat_instance}
+    return {"message": message_instance, "chat": chat_instance}
 
 
 def prepare_data_before_edit_message(*, data: message_data) -> message_data:
@@ -84,11 +71,9 @@ def prepare_data_before_edit_message(*, data: message_data) -> message_data:
     return prepared_data
 
 
-def edit_message(
-    *, message: Messsage, new_data: message_data, chat: Chat
-) -> Optional[str]:
+def edit_message(*, data: message_data, message: Messsage, chat: Chat) -> Optional[str]:
     try:
-        prepared_data = prepare_data_before_edit_message(data=new_data)
+        prepared_data = prepare_data_before_edit_message(data=data["new_data"])
 
         message.__dict__.update(**prepared_data, edited=True)
         message.edited = True
@@ -105,37 +90,3 @@ def edit_message(
     except Exception as _err:
         print(_err)
         raise InvalidDataException
-
-
-def edit_message_consumer() -> None:
-    consumer: KafkaConsumer = KafkaConsumer(
-        TOPIC_NAME, **settings.KAFKA_CONSUMER_CONFIG
-    )
-
-    for data in consumer:
-        try:
-            valid_data = validate_input_data(data.value)
-            response_data = edit_message(
-                message=valid_data["message_instance"],
-                chat=valid_data["chat_instance"],
-                new_data=data.value["new_data"],
-            )
-            default_producer(
-                RESPONSE_TOPIC_NAME,
-                generate_response(
-                    status=RESPONSE_STATUSES["SUCCESS"],
-                    data=response_data,
-                    message_type=MESSAGE_TYPE,
-                    request_data=add_request_data_to_response(data.value),
-                ),
-            )
-        except COMPARED_CHAT_EXCEPTIONS as err:
-            default_producer(
-                RESPONSE_TOPIC_NAME,
-                generate_response(
-                    status=RESPONSE_STATUSES["ERROR"],
-                    data=str(err),
-                    message_type=MESSAGE_TYPE,
-                    request_data=add_request_data_to_response(data.value),
-                ),
-            )

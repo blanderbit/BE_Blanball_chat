@@ -1,13 +1,9 @@
 from typing import Any, Optional
 
-from django.conf import settings
-from kafka import KafkaConsumer
-
 from chat.decorators.set_required_fields import (
     set_required_fields,
 )
 from chat.exceptions import (
-    COMPARED_CHAT_EXCEPTIONS,
     InvalidDataException,
     NotProvidedException,
 )
@@ -15,13 +11,7 @@ from chat.models import Chat, Messsage
 from chat.serializers import (
     ServiceMessageSeralizer,
 )
-from chat.tasks.default_producer import (
-    default_producer,
-)
 from chat.utils import (
-    RESPONSE_STATUSES,
-    add_request_data_to_response,
-    generate_response,
     remove_duplicates_from_array,
     round_date_and_time,
 )
@@ -29,15 +19,6 @@ from chat.utils import (
 # the name of the main topic that we
 # are listening to receive data from outside
 TOPIC_NAME: str = "create_chat"
-
-# the name of the topic to which we send the answer
-RESPONSE_TOPIC_NAME: str = "create_chat_response"
-
-MESSAGE_TYPES: dict[str, str] = {
-    Chat.Type.PERSONAL: "create_personal_chat",
-    Chat.Type.GROUP: "create_group_or_event_group_chat",
-    Chat.Type.EVENT_GROUP: "create_group_or_event_group_chat",
-}
 
 chat_data = dict[str, Any]
 
@@ -107,7 +88,6 @@ def create_chat(data: chat_data, return_instance: bool = False) -> Optional[chat
         )
 
         response_data: dict[str, Any] = {
-            "message_type": MESSAGE_TYPES[chat_type],
             "users": chat.users,
             "service_message": ServiceMessageSeralizer(new_service_message).data,
             "chat_data": {
@@ -120,7 +100,7 @@ def create_chat(data: chat_data, return_instance: bool = False) -> Optional[chat
 
         if return_instance:
             response_data = {
-                "chat_instance": chat,
+                "chat": chat,
                 "chat_data": response_data["chat_data"],
             }
 
@@ -129,37 +109,3 @@ def create_chat(data: chat_data, return_instance: bool = False) -> Optional[chat
     except Exception as _err:
         print(_err)
         raise InvalidDataException
-
-
-def process_create_chat_request(data: chat_data) -> None:
-    try:
-        validate_input_data(data)
-        new_chat_data = create_chat(data)
-        default_producer(
-            RESPONSE_TOPIC_NAME,
-            generate_response(
-                status=RESPONSE_STATUSES["SUCCESS"],
-                data=new_chat_data,
-                message_type=new_chat_data.pop("message_type"),
-                request_data=add_request_data_to_response(data),
-            ),
-        )
-    except COMPARED_CHAT_EXCEPTIONS as err:
-        default_producer(
-            RESPONSE_TOPIC_NAME,
-            generate_response(
-                status=RESPONSE_STATUSES["ERROR"],
-                data=str(err),
-                message_type=new_chat_data.pop("message_type"),
-                request_data=add_request_data_to_response(data),
-            ),
-        )
-
-
-def create_chat_consumer() -> None:
-    consumer: KafkaConsumer = KafkaConsumer(
-        TOPIC_NAME, **settings.KAFKA_CONSUMER_CONFIG
-    )
-
-    for data in consumer:
-        process_create_chat_request(data.value)

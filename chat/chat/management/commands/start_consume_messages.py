@@ -1,32 +1,17 @@
-import multiprocessing
+from threading import Thread
 
 from django.core.management.base import (
     BaseCommand,
 )
 
-from chat.tasks import ALL_TASKS
+from chat.helpers.default_consumer import (
+    default_consumer,
+)
 
 
 class Command(BaseCommand):
     help = "Consume Kafka messages"
 
     def handle(self, *args, **options):
-        processes = []
-
-        for task in ALL_TASKS:
-            process = multiprocessing.Process(target=task)
-            processes.append(process)
-
-        # Start all the consumer processes
-        for process in processes:
-            process.start()
-
-        # Wait for all the consumer processes to finish
-        for process in processes:
-            process.join()
-
-        self.stdout.write(
-            self.style.SUCCESS(
-                "Message consumption via kafka broker started successfully for all tasks"
-            )
-        )
+        thread = Thread(target=default_consumer)
+        thread.start()

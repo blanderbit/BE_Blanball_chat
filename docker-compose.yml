@@ -11,7 +11,7 @@ x-blanball-chat-api-common-dev: &blanball-chat-api-common-dev
     - .:/usr/src/blanball-chat
   networks:
     - blaball-chat-network-dev
-    - blanball-chat-connection-network-dev
+    - test-chat-network
   depends_on:
     blanball-chat-db-dev:
       condition: service_healthy
@@ -42,6 +42,7 @@ services:
       - redis-data:/usr/src/blanball-chat-redis/storage/redis/data
     networks:
       - blaball-chat-network-dev
+      - test-chat-network
     healthcheck:
       test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
       timeout: 5s
@@ -79,7 +80,7 @@ services:
       - kafka-data:/usr/src/blanball-chat/storage/kafka/data
     networks:
       - blaball-chat-network-dev
-      - blanball-chat-connection-network-dev
+      - test-chat-network
 
   blanball-chat-zookeeper-dev:
     container_name: blanball-chat-zookeeper-dev
@@ -94,14 +95,15 @@ services:
       - zookeeper-logs-data:/usr/src/blanball-chat/storage/zookeeper-logs/data \
     networks:
       - blaball-chat-network-dev
-      - blanball-chat-connection-network-dev
+      - test-chat-network
 
 
 networks:
     blaball-chat-network-dev:
-        name: blaball-chat-network-dev
-    blanball-chat-connection-network-dev:
-        name: blanball-chat-connection-network-dev
+      name: blaball-chat-network-dev
+    test-chat-network:
+      external:
+        name: test-chat-network
 
 volumes:
   kafka-data:

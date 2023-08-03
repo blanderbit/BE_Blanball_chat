@@ -1,24 +1,14 @@
 from typing import Any, Optional
 
-from django.conf import settings
-from kafka import KafkaConsumer
-
 from chat.decorators import set_required_fields
 from chat.exceptions import (
-    COMPARED_CHAT_EXCEPTIONS,
     InvalidDataException,
     NotProvidedException,
     PermissionsDeniedException,
 )
 from chat.models import Chat
-from chat.tasks.default_producer import (
-    default_producer,
-)
 from chat.utils import (
-    RESPONSE_STATUSES,
-    add_request_data_to_response,
     check_user_is_chat_admin,
-    generate_response,
     get_chat,
     remove_unnecessary_data,
 )
@@ -27,16 +17,12 @@ from chat.utils import (
 # are listening to receive data from outside
 TOPIC_NAME: str = "edit_chat"
 
-# the name of the topic to which we send the answer
-RESPONSE_TOPIC_NAME: str = "edit_chat_response"
 CANT_EDIT_DISABLED_CHAT_ERROR: str = "chat_edit_disabled_chat"
 YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_CHAT_ERROR: str = (
     "you_dont_have_permissions_to_edit_this_chat"
 )
 
 KEYS_IN_NEW_DATA_TO_KEEP: list[str] = ["name", "image"]
-
-MESSAGE_TYPE: str = "edit_chat"
 
 
 chat_data = dict[str, Any]
@@ -52,20 +38,24 @@ def validate_input_data(data: chat_data) -> None:
 
     if chat_instance.disabled:
         raise PermissionsDeniedException(CANT_EDIT_DISABLED_CHAT_ERROR)
-    if not request_user_id and chat_instance.is_group():
+    if not request_user_id and chat_instance.is_group:
         raise NotProvidedException(fields=["request_user_id"])
-    elif request_user_id and chat_instance.is_group():
+    elif request_user_id and chat_instance.is_group:
         if not check_user_is_chat_admin(chat=chat_instance, user_id=request_user_id):
             raise PermissionsDeniedException(
                 YOU_DONT_HAVE_PERMISSIONS_TO_EDIT_THIS_CHAT_ERROR
             )
 
-    return {"chat_instance": chat_instance}
+    return {"chat": chat_instance}
 
 
-def edit_chat(*, chat: Chat, new_data: chat_data) -> Optional[str]:
+def edit_chat(*, data: dict[str, Any], chat: Chat) -> Optional[str]:
+    new_chat_data: dict[str, Any] = data["new_data"]
+
     try:
-        prepared_data = remove_unnecessary_data(new_data, *KEYS_IN_NEW_DATA_TO_KEEP)
+        prepared_data = remove_unnecessary_data(
+            new_chat_data, *KEYS_IN_NEW_DATA_TO_KEEP
+        )
         chat.__dict__.update(**prepared_data)
         chat.save()
 
@@ -82,35 +72,3 @@ def edit_chat(*, chat: Chat, new_data: chat_data) -> Optional[str]:
     except Exception as _err:
         print(_err)
         raise InvalidDataException
-
-
-def edit_chat_consumer() -> None:
-    consumer: KafkaConsumer = KafkaConsumer(
-        TOPIC_NAME, **settings.KAFKA_CONSUMER_CONFIG
-    )
-
-    for data in consumer:
-        try:
-            valid_data = validate_input_data(data.value)
-            response_data = edit_chat(
-                chat=valid_data["chat_instance"], new_data=data.value.get("new_data")
-            )
-            default_producer(
-                RESPONSE_TOPIC_NAME,
-                generate_response(
-                    status=RESPONSE_STATUSES["SUCCESS"],
-                    data=response_data,
-                    message_type=MESSAGE_TYPE,
-                    request_data=add_request_data_to_response(data.value),
-                ),
-            )
-        except COMPARED_CHAT_EXCEPTIONS as err:
-            default_producer(
-                RESPONSE_TOPIC_NAME,
-                generate_response(
-                    status=RESPONSE_STATUSES["ERROR"],
-                    data=str(err),
-                    message_type=MESSAGE_TYPE,
-                    request_data=add_request_data_to_response(data.value),
-                ),
-            )

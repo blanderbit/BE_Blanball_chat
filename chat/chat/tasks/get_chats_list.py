@@ -1,33 +1,15 @@
 from typing import Any, Optional
 
-from django.conf import settings
 from django.db.models.query import QuerySet
-from kafka import KafkaConsumer
 
 from chat.decorators import set_required_fields
-from chat.exceptions import (
-    COMPARED_CHAT_EXCEPTIONS,
-)
 from chat.models import Chat
 from chat.serializers import ChatsListSerializer
-from chat.tasks.default_producer import (
-    default_producer,
-)
-from chat.utils import (
-    RESPONSE_STATUSES,
-    add_request_data_to_response,
-    custom_pagination,
-    generate_response,
-)
+from chat.utils import custom_pagination
 
 # the name of the main topic that we
 # are listening to receive data from outside
 TOPIC_NAME: str = "get_chats_list"
-
-# the name of the topic to which we send the answer
-RESPONSE_TOPIC_NAME: str = "get_chats_list_response"
-
-MESSAGE_TYPE: str = "get_chats_list"
 
 AVILABLE_CHATS_TYPE_FILTER: dict[str, str] = {
     "dialog": "dialog",
@@ -79,33 +61,3 @@ def get_chats_list(*, data: chat_data) -> dict[str, Any]:
         serializer_class=ChatsListSerializer,
         serializer_context={"request_user_id": request_user_id},
     )
-
-
-def get_chats_list_consumer() -> None:
-    consumer: KafkaConsumer = KafkaConsumer(
-        TOPIC_NAME, **settings.KAFKA_CONSUMER_CONFIG
-    )
-
-    for data in consumer:
-        try:
-            validate_input_data(data.value)
-            response_data = get_chats_list(data=data.value)
-            default_producer(
-                RESPONSE_TOPIC_NAME,
-                generate_response(
-                    status=RESPONSE_STATUSES["SUCCESS"],
-                    data=response_data,
-                    message_type=MESSAGE_TYPE,
-                    request_data=add_request_data_to_response(data.value),
-                ),
-            )
-        except COMPARED_CHAT_EXCEPTIONS as err:
-            default_producer(
-                RESPONSE_TOPIC_NAME,
-                generate_response(
-                    status=RESPONSE_STATUSES["ERROR"],
-                    data=str(err),
-                    message_type=MESSAGE_TYPE,
-                    request_data=add_request_data_to_response(data.value),
-                ),
-            )

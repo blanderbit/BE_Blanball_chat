@@ -83,8 +83,7 @@ class Chat(models.Model):
 
     def unread_messages_count(self, user_id: int) -> int:
         read_by_user_ids = self.messages.filter(
-            Q(sender_id=user_id),
-            Q(read_by__user_id=user_id) | Q(read_by=None)
+            Q(sender_id=user_id), Q(read_by__user_id=user_id) | Q(read_by=None)
         ).values_list("id", flat=True)
 
         unread_messages = self.messages.exclude(

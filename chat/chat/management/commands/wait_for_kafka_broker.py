@@ -17,8 +17,9 @@ class Command(BaseCommand):
 
         while not self.connected:
             try:
-                KafkaConsumer(**settings.KAFKA_CONSUMER_CONFIG)
+                consumer = KafkaConsumer(**settings.KAFKA_CONSUMER_CONFIG)
                 self.connected = True
+                consumer.close()
                 self.on_connection_success(
                     settings.KAFKA_CONSUMER_CONFIG["bootstrap_servers"]
                 )

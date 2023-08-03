@@ -119,6 +119,11 @@ KAFKA_PRODUCER_CONFIG: dict[str, Any] = {
 KAFKA_CONSUMER_CONFIG: dict[str, Any] = {
     "bootstrap_servers": [config("KAFKA_CONSUMER_ADRESS", cast=str)],
     "value_deserializer": lambda v: json.loads(v.decode("utf-8")),
+    "enable_auto_commit": True,
+}
+
+KAFKA_ADMIN_CONFIG: dict[str, Any] = {
+    "bootstrap_servers": [config("KAFKA_CONSUMER_ADRESS", cast=str)],
 }
 
 

@@ -1,35 +1,20 @@
 from typing import Any, Optional
 
-from django.conf import settings
-from kafka import KafkaConsumer
-
 from chat.decorators import set_required_fields
 from chat.exceptions import (
-    COMPARED_CHAT_EXCEPTIONS,
     PermissionsDeniedException,
 )
 from chat.models import Chat
-from chat.tasks.default_producer import (
-    default_producer,
-)
 from chat.utils import (
-    RESPONSE_STATUSES,
-    add_request_data_to_response,
     check_user_is_chat_author,
     check_user_is_chat_member,
     find_user_in_chat_by_id,
-    generate_response,
     get_chat,
 )
 
 # the name of the main topic that we
 # are listening to receive data from outside
 TOPIC_NAME: str = "remove_user_from_chat"
-
-# the name of the topic to which we send the answer
-RESPONSE_TOPIC_NAME: str = "remove_user_from_chat_response"
-
-MESSAGE_TYPE: str = "remove_user_from_chat"
 
 CANT_REMOVE_USER_WHO_NOT_IN_THE_CHAT: str = "cant_remove_user_who_not_in_the_chat"
 YOU_DONT_HAVE_PERMISSIONS_TO_REMOVE_USER_FROM_THIS_CHAT_ERROR: str = (
@@ -62,12 +47,13 @@ def validate_input_data(data: chat_data) -> None:
     if not check_user_is_chat_member(chat=chat_instance, user_id=user_id):
         raise PermissionsDeniedException(CANT_REMOVE_USER_WHO_NOT_IN_THE_CHAT)
 
-    return {"chat_instance": chat_instance}
+    return {"chat": chat_instance}
 
 
-def remove_user_from_chat(
-    *, user_id: int, chat: Chat, request_user_id: Optional[int] = None
-) -> str:
+def remove_user_from_chat(*, data: dict[str, Any], chat: Chat) -> str:
+    user_id: int = data["user_id"]
+    request_user_id: Optional[int] = request_user_id.get("request_user_id")
+
     user_to_remove = find_user_in_chat_by_id(users=chat.users, user_id=user_id)
 
     if user_to_remove:
@@ -93,37 +79,3 @@ def remove_user_from_chat(
     }
 
     return response_data
-
-
-def remove_user_from_chat_consumer() -> None:
-    consumer: KafkaConsumer = KafkaConsumer(
-        TOPIC_NAME, **settings.KAFKA_CONSUMER_CONFIG
-    )
-
-    for data in consumer:
-        try:
-            valid_data = validate_input_data(data.value)
-            response_data = remove_user_from_chat(
-                user_id=data.value.get("user_id"),
-                chat=valid_data["chat_instance"],
-                request_user_id=data.value.get("request_user_id"),
-            )
-            default_producer(
-                RESPONSE_TOPIC_NAME,
-                generate_response(
-                    status=RESPONSE_STATUSES["SUCCESS"],
-                    data=response_data,
-                    message_type=MESSAGE_TYPE,
-                    request_data=add_request_data_to_response(data.value),
-                ),
-            )
-        except COMPARED_CHAT_EXCEPTIONS as err:
-            default_producer(
-                RESPONSE_TOPIC_NAME,
-                generate_response(
-                    status=RESPONSE_STATUSES["ERROR"],
-                    data=str(err),
-                    message_type=MESSAGE_TYPE,
-                    request_data=add_request_data_to_response(data.value),
-                ),
-            )
