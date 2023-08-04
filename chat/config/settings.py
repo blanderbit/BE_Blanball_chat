@@ -123,7 +123,7 @@ KAFKA_CONSUMER_CONFIG: dict[str, Any] = {
 }
 
 KAFKA_ADMIN_CONFIG: dict[str, Any] = {
-    "bootstrap_servers": [config("KAFKA_CONSUMER_ADRESS", cast=str)],
+    "bootstrap_servers": [config("KAFKA_PRODUCER_ADRESS", cast=str)],
 }
 
 

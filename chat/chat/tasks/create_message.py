@@ -32,8 +32,6 @@ MUST_BE_PROVIDED_CHAT_ID_OR_USER_ID_FOR_REQUEST_CHAT_ERROR: str = (
 
 CREATE_MESSAGE_FIELDS: list[str] = ["sender_id", "text", "reply_to"]
 
-MESSAGE_TYPES: dict[str, str] = {"n_r": "new_request_for_chat", "c_m": "create_message"}
-
 message_data = dict[str, Any]
 
 
@@ -58,7 +56,6 @@ def validate_input_data(data: message_data) -> None:
         )
 
     chat_instance: Optional[Chat] = None
-    message_type: str = MESSAGE_TYPES["c_m"]
 
     if user_id_for_request_chat:
         chat_instance = get_request_for_chat_without_error(
@@ -78,10 +75,8 @@ def validate_input_data(data: message_data) -> None:
 
         if chat_instance.disabled:
             raise PermissionsDeniedException(CANT_SEND_MESSAGE_IN_DISABLED_CHAT_ERROR)
-    else:
-        message_type = MESSAGE_TYPES["n_r"]
 
-    return {"message_type": message_type, "chat": chat_instance}
+    return {"chat": chat_instance}
 
 
 def prepare_data_before_create_message(*, data: message_data) -> message_data:
