@@ -24,7 +24,7 @@ services:
     container_name: blanball-chat-db-prod
     env_file:
       - .stack.env
-    image: postgres:latest
+    image: postgres:15.4
     volumes:
       - db-data-prod:/var/lib/postgresql/data
     networks:

@@ -19,7 +19,7 @@ services:
     container_name: blanball-chat-db-test
     env_file:
       - stack.env
-    image: postgres:latest
+    image: postgres:15.4
     volumes:
       - db-data-test:/var/lib/postgresql/data
     networks:
